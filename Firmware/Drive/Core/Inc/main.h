@@ -60,6 +60,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define led_Pin GPIO_PIN_13
+#define led_GPIO_Port GPIOC
 #define LeftA_Pin GPIO_PIN_0
 #define LeftA_GPIO_Port GPIOA
 #define LeftB_Pin GPIO_PIN_1
@@ -80,10 +82,10 @@ void Error_Handler(void);
 #define LeftEncoderA_GPIO_Port GPIOA
 #define LeftEncoderB_Pin GPIO_PIN_9
 #define LeftEncoderB_GPIO_Port GPIOA
-#define CanRx_Pin GPIO_PIN_11
-#define CanRx_GPIO_Port GPIOA
 #define CanTx_Pin GPIO_PIN_12
 #define CanTx_GPIO_Port GPIOA
+#define estop_Pin GPIO_PIN_9
+#define estop_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

@@ -56,8 +56,16 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern CAN_HandleTypeDef hcan;
 /* USER CODE BEGIN EV */
+
+//extern CAN_HandleTypeDef hcan;
+extern CAN_TxHeaderTypeDef pHeader;
+extern CAN_RxHeaderTypeDef pRxHeader;
+extern uint32_t pTxMailBox;
+extern uint8_t a;
+extern uint8_t r;
+
 
 /* USER CODE END EV */
 
@@ -196,6 +204,23 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f1xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles USB low priority or CAN RX0 interrupts.
+  */
+void USB_LP_CAN1_RX0_IRQHandler(void)
+{
+  /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 0 */
+
+  /* USER CODE END USB_LP_CAN1_RX0_IRQn 0 */
+  HAL_CAN_IRQHandler(&hcan);
+  /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 1 */
+
+  //r is data.
+  HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &pRxHeader, &r);
+
+  /* USER CODE END USB_LP_CAN1_RX0_IRQn 1 */
+}
 
 /* USER CODE BEGIN 1 */
 

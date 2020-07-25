@@ -49,6 +49,15 @@ TIM_HandleTypeDef htim8;
 
 /* USER CODE BEGIN PV */
 
+CAN_HandleTypeDef hcan; // Can Bus
+CAN_TxHeaderTypeDef pHeader; // Can Header Tx
+CAN_RxHeaderTypeDef pRxHeader; // Can Header Rx
+uint32_t pTxMailBox; // Placeholder variable. Might need later
+uint8_t a; // Byte to send
+uint8_t r; // Byte to Receive
+CAN_FilterTypeDef sFilterConfig;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -100,7 +109,24 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
+  pHeader.DLC=1;
+   pHeader.IDE=CAN_ID_STD;
+   pHeader.RTR=CAN_RTR_DATA;
+   pHeader.StdId=0x245;
 
+   sFilterConfig.FilterFIFOAssignment=CAN_FILTER_FIFO0;
+   sFilterConfig.FilterIdHigh=0x244<<5;
+   sFilterConfig.FilterIdLow=0;
+   sFilterConfig.FilterMaskIdHigh=0;
+   sFilterConfig.FilterMaskIdLow=0;
+   sFilterConfig.FilterScale=CAN_FILTERSCALE_32BIT;
+   sFilterConfig.FilterActivation=ENABLE;
+
+   HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
+
+   /* USER CODE BEGIN 2 */
+   HAL_CAN_Start(&hcan);
+   HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -358,17 +384,17 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LeftA_Pin|LeftB_Pin|RightA_Pin|RightB_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PC13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  /*Configure GPIO pin : led_Pin */
+  GPIO_InitStruct.Pin = led_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(led_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LeftA_Pin LeftB_Pin RightA_Pin RightB_Pin */
   GPIO_InitStruct.Pin = LeftA_Pin|LeftB_Pin|RightA_Pin|RightB_Pin;
@@ -377,11 +403,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  /*Configure GPIO pin : estop_Pin */
+  GPIO_InitStruct.Pin = estop_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(estop_GPIO_Port, &GPIO_InitStruct);
 
 }
 
