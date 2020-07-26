@@ -82,10 +82,6 @@ void Error_Handler(void);
 #define LeftEncoderA_GPIO_Port GPIOA
 #define LeftEncoderB_Pin GPIO_PIN_9
 #define LeftEncoderB_GPIO_Port GPIOA
-#define CanTx_Pin GPIO_PIN_12
-#define CanTx_GPIO_Port GPIOA
-#define estop_Pin GPIO_PIN_9
-#define estop_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

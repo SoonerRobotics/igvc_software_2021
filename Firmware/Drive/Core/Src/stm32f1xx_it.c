@@ -215,10 +215,15 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
   /* USER CODE END USB_LP_CAN1_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan);
   /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 1 */
-
-  //r is data.
   HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &pRxHeader, &r);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  if (r % 3 == 0){
+   //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+ 	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+   }
+   else{
+ 	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+   }
+
   /* USER CODE END USB_LP_CAN1_RX0_IRQn 1 */
 }
 

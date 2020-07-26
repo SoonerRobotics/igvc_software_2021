@@ -112,10 +112,10 @@ int main(void)
    pHeader.DLC=1; // amount of bytes to send
    pHeader.IDE=CAN_ID_STD;
    pHeader.RTR=CAN_RTR_DATA;
-   pHeader.StdId=0x245;
+   pHeader.StdId=0x244;
 
    sFilterConfig.FilterFIFOAssignment=CAN_FILTER_FIFO0;
-   sFilterConfig.FilterIdHigh=0x244<<5;
+   sFilterConfig.FilterIdHigh=0x245<<5;
    sFilterConfig.FilterIdLow=0;
    sFilterConfig.FilterMaskIdHigh=0;
    sFilterConfig.FilterMaskIdLow=0;
@@ -133,8 +133,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-	  HAL_Delay(1000);
+	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+	  //HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -405,11 +405,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : estop_Pin */
-  GPIO_InitStruct.Pin = estop_Pin;
+  /*Configure GPIO pin : PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(estop_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 
