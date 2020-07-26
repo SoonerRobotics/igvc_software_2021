@@ -218,7 +218,7 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 
   //r is data.
   HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &pRxHeader, &r);
-
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
   /* USER CODE END USB_LP_CAN1_RX0_IRQn 1 */
 }
 
