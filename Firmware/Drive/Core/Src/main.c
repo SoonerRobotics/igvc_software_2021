@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdlib.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -57,7 +58,10 @@ uint8_t a; // Byte to send
 uint8_t r; // Byte to Receive
 CAN_FilterTypeDef sFilterConfig;
 
-
+float speed = 0;
+int max_speed = 127;
+float pulse_calc;
+int8_t signed_r;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -68,6 +72,8 @@ static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM8_Init(void);
 /* USER CODE BEGIN PFP */
+static void setPWM(TIM_HandleTypeDef, uint32_t, uint16_t, uint16_t);
+
 
 /* USER CODE END PFP */
 
@@ -131,10 +137,23 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+   setPWM(htim3, TIM_CHANNEL_3, 2, 1);
+   r = 0;
+
   while (1)
   {
+	  signed_r = (int8_t)r; // Converts the latest received byte value to
+	  speed = signed_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
+	  pulse_calc = abs(speed * (float)1000 / (float)2.5); // converts the speed from meters / second to pulses. 0 to 1000
 	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-	  //HAL_Delay(1000);
+
+
+	  setPWM(htim3, TIM_CHANNEL_3, 1000, 100);
+	  HAL_Delay(1000);
+	  setPWM(htim3, TIM_CHANNEL_3, 1000, (uint16_t)pulse_calc);
+	  HAL_Delay(1000);
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -414,6 +433,30 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+/*
+ * @brief set pulse of and period of PWM output
+ * @param timer: Which timer are we using
+ * @param channel: Which channel of the timer we are using
+ * @param period: The period of the PWM signal that you want to set
+ * @param pulse: How long you want the PWM signal to stay on. Duty cycle = Pulse / Period
+ * @retval None
+ */
+
+
+void setPWM(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period, uint16_t pulse){
+	HAL_TIM_PWM_Stop(&timer, channel); // Stop the PWM temporarily
+	TIM_OC_InitTypeDef sConfigOC;
+	timer.Init.Period = period;			// set period duration
+	HAL_TIM_PWM_Init(&timer);			// reinit new period value
+
+	sConfigOC.OCMode = TIM_OCMODE_PWM1;
+	sConfigOC.Pulse = pulse; //set pulse duration
+	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+	HAL_TIM_PWM_ConfigChannel(&timer, &sConfigOC, channel);
+	HAL_TIM_PWM_Start(&timer, channel);
+
+}
 
 /* USER CODE END 4 */
 
