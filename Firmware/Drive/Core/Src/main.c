@@ -55,13 +55,17 @@ CAN_TxHeaderTypeDef pHeader; // Can Header Tx
 CAN_RxHeaderTypeDef pRxHeader; // Can Header Rx
 uint32_t pTxMailBox; // Placeholder variable. Might need later
 uint8_t a; // Byte to send
-uint8_t r; // Byte to Receive
+uint8_t r[3]; // Byte to Receive
 CAN_FilterTypeDef sFilterConfig;
 
-float speed = 0;
+float left_speed = 0;
+float right_speed = 0;
 int max_speed = 127;
-float pulse_calc;
-int8_t signed_r;
+float left_pulse_calc;
+float right_pulse_calc;
+int8_t left_r;
+int8_t right_r;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -115,7 +119,7 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
-   pHeader.DLC=1; // amount of bytes to send
+   pHeader.DLC=3; // amount of bytes to send
    pHeader.IDE=CAN_ID_STD;
    pHeader.RTR=CAN_RTR_DATA;
    pHeader.StdId=0x244;
@@ -137,25 +141,31 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-   setPWM(htim3, TIM_CHANNEL_3, 2, 1);
-   r = 0;
+
+
+   r[0] = 0;
+   r[1] = 0;
+   r[2] = 0;
 
   while (1)
   {
-	  signed_r = (int8_t)r; // Converts the latest received byte value to
-	  speed = signed_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
-	  pulse_calc = abs(speed * (float)1000 / (float)2.5); // converts the speed from meters / second to pulses. 0 to 1000
+	  left_r = (int8_t)r[0]; // Converts the latest received byte value to
+	  left_speed = left_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
+
+	  right_r = (int8_t)r[1]; // Converts the latest received byte value to
+	  right_speed = right_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
+
+	  left_pulse_calc = abs(left_speed * (float)1000 / (float)2.5); // converts the speed from meters / second to pulses. 0 to 1000
+	  left_pulse_calc = abs(left_speed * (float)1000 / (float)2.5); // converts the speed from meters / second to pulses. 0 to 1000
 	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 
 
-	  setPWM(htim3, TIM_CHANNEL_3, 1000, 100);
-	  HAL_Delay(1000);
-	  setPWM(htim3, TIM_CHANNEL_3, 1000, (uint16_t)pulse_calc);
-	  HAL_Delay(1000);
 
+	  setPWM(htim3, TIM_CHANNEL_3, 1000, (uint16_t)left_pulse_calc);
+	  setPWM(htim3, TIM_CHANNEL_4, 1000, (uint16_t)right_pulse_calc);
+	  HAL_Delay(100);
 
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

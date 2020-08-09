@@ -64,7 +64,7 @@ extern CAN_TxHeaderTypeDef pHeader;
 extern CAN_RxHeaderTypeDef pRxHeader;
 extern uint32_t pTxMailBox;
 extern uint8_t a;
-extern uint8_t r;
+extern uint8_t r[3];
 
 
 /* USER CODE END EV */
@@ -216,7 +216,7 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
   HAL_CAN_IRQHandler(&hcan);
   /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 1 */
   HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &pRxHeader, &r);
-  if (r % 3 == 0){
+  if (r[0] % 2 == 0){
    //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
  	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
    }
