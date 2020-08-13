@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "IGVCMotor.h"
 #include <stdlib.h>
 
 /* Private includes ----------------------------------------------------------*/
@@ -50,7 +51,7 @@ TIM_HandleTypeDef htim8;
 
 /* USER CODE BEGIN PV */
 
-CAN_HandleTypeDef hcan; // Can Bus
+//CAN_HandleTypeDef hcan; // Can Bus Was defined twice.
 CAN_TxHeaderTypeDef pHeader; // Can Header Tx
 CAN_RxHeaderTypeDef pRxHeader; // Can Header Rx
 uint32_t pTxMailBox; // Placeholder variable. Might need later
@@ -147,27 +148,24 @@ int main(void)
    r[1] = 0;
    r[2] = 0;
 
-  while (1)
-  {
-	  left_r = (int8_t)r[0]; // Converts the latest received byte value to
-	  left_speed = left_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
+   while (1) {
+	   left_r = (int8_t) r[0]; // Converts the latest received byte value to
+	   left_speed = left_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
 
-	  right_r = (int8_t)r[1]; // Converts the latest received byte value to
-	  right_speed = right_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
+	   right_r = (int8_t) r[1]; // Converts the latest received byte value to
+	   right_speed = right_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
 
-	  left_pulse_calc = abs(left_speed * (float)1000 / (float)2.5); // converts the speed from meters / second to pulses. 0 to 1000
-	  left_pulse_calc = abs(left_speed * (float)1000 / (float)2.5); // converts the speed from meters / second to pulses. 0 to 1000
-	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+	   left_pulse_calc = abs(left_speed * (float) 1000 / (float) 2.5); // converts the speed from meters / second to pulses. 0 to 1000
+	   left_pulse_calc = abs(left_speed * (float) 1000 / (float) 2.5); // converts the speed from meters / second to pulses. 0 to 1000
+	   //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 
+	   setPWM(htim3, TIM_CHANNEL_3, 1000, (uint16_t) left_pulse_calc);
+	   setPWM(htim3, TIM_CHANNEL_4, 1000, (uint16_t) right_pulse_calc);
+	   HAL_Delay(100);
 
-
-	  setPWM(htim3, TIM_CHANNEL_3, 1000, (uint16_t)left_pulse_calc);
-	  setPWM(htim3, TIM_CHANNEL_4, 1000, (uint16_t)right_pulse_calc);
-	  HAL_Delay(100);
-
-    /* USER CODE END WHILE */
-    /* USER CODE BEGIN 3 */
-  }
+	   /* USER CODE END WHILE */
+	   /* USER CODE BEGIN 3 */
+   }
   /* USER CODE END 3 */
 }
 
