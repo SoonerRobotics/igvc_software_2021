@@ -20,12 +20,11 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "IGVCMotor.h"
-#include <stdlib.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+	#include "IGVCMotor.h"
+	#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,9 +44,7 @@
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan;
 
-TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef htim8;
 
 /* USER CODE BEGIN PV */
 
@@ -56,7 +53,7 @@ CAN_TxHeaderTypeDef pHeader; // Can Header Tx
 CAN_RxHeaderTypeDef pRxHeader; // Can Header Rx
 uint32_t pTxMailBox; // Placeholder variable. Might need later
 uint8_t a; // Byte to send
-uint8_t r[3]; // Byte to Receive
+uint8_t *r; // Byte to Receive
 CAN_FilterTypeDef sFilterConfig;
 
 float left_speed = 0;
@@ -67,17 +64,19 @@ float right_pulse_calc;
 int8_t left_r;
 int8_t right_r;
 
+IGVCMotor motor_left(GPIO_PIN_0, GPIO_PIN_1, TIM_CHANNEL_3);
+IGVCMotor motor_right(GPIO_PIN_2, GPIO_PIN_3, TIM_CHANNEL_4);
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN_Init(void);
-static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
-static void MX_TIM8_Init(void);
 /* USER CODE BEGIN PFP */
-static void setPWM(TIM_HandleTypeDef, uint32_t, uint16_t, uint16_t);
+//static void setPWM(TIM_HandleTypeDef, uint32_t, uint16_t, uint16_t);
 
 
 /* USER CODE END PFP */
@@ -116,9 +115,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN_Init();
-  MX_TIM1_Init();
   MX_TIM3_Init();
-  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
    pHeader.DLC=3; // amount of bytes to send
    pHeader.IDE=CAN_ID_STD;
@@ -143,28 +140,31 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+   uint8_t temp[3];
+   temp[0] = 0;
+   temp[1] = 0;
+   temp[2] = 0;
+   r = temp;
 
-   r[0] = 0;
-   r[1] = 0;
-   r[2] = 0;
+
 
    while (1) {
 	   left_r = (int8_t) r[0]; // Converts the latest received byte value to
-	   left_speed = left_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
+	   left_speed = left_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from -2.5 to 2.5. This is used to calculate the speed later.
 
 	   right_r = (int8_t) r[1]; // Converts the latest received byte value to
-	   right_speed = right_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from 0 to 2.5. This is used to calculate the speed later.
+	   right_speed = right_r * 2.5 / 127; // 2.5 * 1000 / 127 should result in a number from -2.5 to 2.5. This is used to calculate the speed later.
 
-	   left_pulse_calc = abs(left_speed * (float) 1000 / (float) 2.5); // converts the speed from meters / second to pulses. 0 to 1000
-	   left_pulse_calc = abs(left_speed * (float) 1000 / (float) 2.5); // converts the speed from meters / second to pulses. 0 to 1000
+	   //left_pulse_calc = abs(left_speed * (float) 1000 / (float) 2.5); // converts the speed from meters / second to pulses. 0 to 1000
+	   //left_pulse_calc = abs(left_speed * (float) 1000 / (float) 2.5); // converts the speed from meters / second to pulses. 0 to 1000
 	   //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-
-	   setPWM(htim3, TIM_CHANNEL_3, 1000, (uint16_t) left_pulse_calc);
-	   setPWM(htim3, TIM_CHANNEL_4, 1000, (uint16_t) right_pulse_calc);
+	   motor_left = (float)left_speed;
+	   motor_right = (float)right_speed;
 	   HAL_Delay(100);
 
-	   /* USER CODE END WHILE */
-	   /* USER CODE BEGIN 3 */
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
    }
   /* USER CODE END 3 */
 }
@@ -244,56 +244,6 @@ static void MX_CAN_Init(void)
 }
 
 /**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM1_Init(void)
-{
-
-  /* USER CODE BEGIN TIM1_Init 0 */
-
-  /* USER CODE END TIM1_Init 0 */
-
-  TIM_Encoder_InitTypeDef sConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM1_Init 1 */
-
-  /* USER CODE END TIM1_Init 1 */
-  htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 0;
-  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
-  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
-  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
-  if (HAL_TIM_Encoder_Init(&htim1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM1_Init 2 */
-
-  /* USER CODE END TIM1_Init 2 */
-
-}
-
-/**
   * @brief TIM3 Initialization Function
   * @param None
   * @retval None
@@ -348,56 +298,6 @@ static void MX_TIM3_Init(void)
 }
 
 /**
-  * @brief TIM8 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM8_Init(void)
-{
-
-  /* USER CODE BEGIN TIM8_Init 0 */
-
-  /* USER CODE END TIM8_Init 0 */
-
-  TIM_Encoder_InitTypeDef sConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM8_Init 1 */
-
-  /* USER CODE END TIM8_Init 1 */
-  htim8.Instance = TIM8;
-  htim8.Init.Prescaler = 0;
-  htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 0;
-  htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim8.Init.RepetitionCounter = 0;
-  htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
-  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
-  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
-  if (HAL_TIM_Encoder_Init(&htim8, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM8_Init 2 */
-
-  /* USER CODE END TIM8_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -432,11 +332,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  /*Configure GPIO pins : PC6 PC7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA8 PA9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 
@@ -451,6 +357,7 @@ static void MX_GPIO_Init(void)
  */
 
 
+/*
 void setPWM(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period, uint16_t pulse){
 	HAL_TIM_PWM_Stop(&timer, channel); // Stop the PWM temporarily
 	TIM_OC_InitTypeDef sConfigOC;
@@ -465,6 +372,7 @@ void setPWM(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period, uint16_t
 	HAL_TIM_PWM_Start(&timer, channel);
 
 }
+*/
 
 /* USER CODE END 4 */
 

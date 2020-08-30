@@ -74,14 +74,6 @@ void Error_Handler(void);
 #define LeftMotorPWM_GPIO_Port GPIOB
 #define RightMotorPWM_Pin GPIO_PIN_1
 #define RightMotorPWM_GPIO_Port GPIOB
-#define RightEncoderA_Pin GPIO_PIN_6
-#define RightEncoderA_GPIO_Port GPIOC
-#define RighEncoderB_Pin GPIO_PIN_7
-#define RighEncoderB_GPIO_Port GPIOC
-#define LeftEncoderA_Pin GPIO_PIN_8
-#define LeftEncoderA_GPIO_Port GPIOA
-#define LeftEncoderB_Pin GPIO_PIN_9
-#define LeftEncoderB_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

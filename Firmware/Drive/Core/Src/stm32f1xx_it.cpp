@@ -23,6 +23,8 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "IGVCMotor.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,8 +66,10 @@ extern CAN_TxHeaderTypeDef pHeader;
 extern CAN_RxHeaderTypeDef pRxHeader;
 extern uint32_t pTxMailBox;
 extern uint8_t a;
-extern uint8_t r[3];
+extern uint8_t  * r;
 
+extern IGVCMotor motor_left;
+extern IGVCMotor motor_right;
 
 /* USER CODE END EV */
 
@@ -215,7 +219,7 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
   /* USER CODE END USB_LP_CAN1_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan);
   /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 1 */
-  HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &pRxHeader, &r);
+  HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &pRxHeader, r);
   if (r[0] % 2 == 0){
    //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
  	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
@@ -225,6 +229,33 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
    }
 
   /* USER CODE END USB_LP_CAN1_RX0_IRQn 1 */
+}
+
+/**
+  * @brief This function handles EXTI line[9:5] interrupts.
+  */
+void EXTI9_5_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI9_5_IRQn 0 */
+	if(__HAL_GPIO_EXTI_GET_FLAG(GPIO_PIN_6) || __HAL_GPIO_EXTI_GET_FLAG(GPIO_PIN_7)){
+		motor_left.pulse(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6),HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7));
+		// could be
+		// motor_left.pulse(1,0); when encoder_a triggers and the opposite when encoder_b triggers
+	}
+	if(__HAL_GPIO_EXTI_GET_FLAG(GPIO_PIN_8) || __HAL_GPIO_EXTI_GET_FLAG(GPIO_PIN_9)){
+		motor_right.pulse(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8),HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_9));
+		// could be
+		// motor_left.pulse(1,0); when encoder_a triggers and the opposite when encoder_b triggers
+	}
+
+  /* USER CODE END EXTI9_5_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_6);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);
+  /* USER CODE BEGIN EXTI9_5_IRQn 1 */
+
+  /* USER CODE END EXTI9_5_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
