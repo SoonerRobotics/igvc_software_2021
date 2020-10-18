@@ -1,0 +1,15 @@
+<launch>
+    <!-- Run the simulator and all the transforms -->
+    <include file="$(find igvc_launch)/launch/config/igvc_sim_config.launch" />
+
+    <!-- EKF -->
+    <include file="$(find igvc_ekf)/launch/igvc_ekf.launch" />
+
+    <!-- Run moving target D*lite and the path follower-->
+    <include file="$(find igvc_nav)/launch/igvc_path_planner.launch" />
+
+    <!-- Mapping -->
+    <include file="$(find igvc_slam)/launch/igvc_slam_sim.launch"/>
+    <include file="$(find igvc_slam)/launch/igvc_mapping.launch"/>
+
+</launch>

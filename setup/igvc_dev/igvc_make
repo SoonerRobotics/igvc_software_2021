@@ -1,0 +1,4 @@
+#!/bin/bash
+
+bash $IGVC_LOC/setup/igvc_dev/helpers/igvc_make_maker.sh
+source $IGVC_LOC/igvc_ws/devel/setup.bash

@@ -1,0 +1,8 @@
+
+<launch>
+    <!-- Moving Target D*Lite node -->
+    <node pkg="igvc_nav" type="mt_dstar_node.py" name="mt_dstar_node" output="screen" />
+
+    <!-- Navigation node-->
+    <node pkg="igvc_nav" type="igvc_nav_node.py" name="igvc_nav_node" output="screen" />
+</launch>

@@ -1,0 +1,40 @@
+repositories:
+    ../igvc_ws/src/deps/ydlidar_ros:
+        type: git
+        url: https://github.com/YDLIDAR/ydlidar_ros
+        version: f51e5e37368422d10df303a74952dc31de162549
+    ../igvc_ws/src/deps/cv_camera:
+        type: git
+        url: https://github.com/OTL/cv_camera.git
+    ../igvc_ws/src/deps/yostlabs_imu:
+        type: git
+        url: https://github.com/SoonerRobotics/yostlab_imu.git
+        version: master
+    ../igvc_ws/src/deps/serial:
+        type: git
+        url: https://github.com/wjwwood/serial.git
+        version: master
+    ../igvc_ws/src/deps/libfreenect:
+        type: git
+        url: https://github.com/OpenKinect/libfreenect.git
+        version: master
+    ../igvc_ws/src/deps/navigation:
+        type: git
+        url: https://github.com/ros-planning/navigation.git
+        version: melodic-devel
+    ../igvc_ws/src/deps/navigation_msgs:
+        type: git
+        url: https://github.com/ros-planning/navigation_msgs.git
+        version: ros1
+    ../igvc_ws/src/deps/slam_gmapping:
+        type: git
+        url: https://github.com/ros-perception/slam_gmapping.git
+        version: melodic-devel
+    ../igvc_ws/src/deps/openslam_gmapping:
+        type: git
+        url: https://github.com/ros-perception/openslam_gmapping.git
+        version: melodic-devel
+    ../igvc_ws/src/deps/hector_slam:
+        type: git
+        url: https://github.com/tu-darmstadt-ros-pkg/hector_slam.git
+        version: melodic-devel

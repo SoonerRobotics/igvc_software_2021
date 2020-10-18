@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd $IGVC_LOC/igvc_ws/src/deps
+rm -rf *
+cd $IGVC_LOC/setup
+vcs import < igvc.deps

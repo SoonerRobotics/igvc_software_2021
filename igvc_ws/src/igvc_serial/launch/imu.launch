@@ -1,0 +1,5 @@
+<launch>
+    <!-- Run required nodes-->
+    <node pkg="yostlab_imu" name="yostlab_driver_node" type="yostlab_driver_node" output="screen"/>
+    <node name="imu_node" pkg="igvc_serial" type="imu_node.py" output="screen"/>
+</launch>
