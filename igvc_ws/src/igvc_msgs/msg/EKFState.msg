@@ -1,0 +1,12 @@
+Header header
+float64 latitude
+float64 longitude
+float64 global_heading
+float64 x
+float64 y
+float64 yaw
+float64 velocity
+float64 yaw_rate
+float64 left_angular_vel
+float64 right_angular_vel
+float64 acceleration

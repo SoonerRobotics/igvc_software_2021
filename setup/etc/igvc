@@ -1,0 +1,24 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          igvc
+# Required-Start:    $all
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: The IGVC Bot
+### END INIT INFO
+
+echo "" > /var/log/magellan.log
+
+case "$1" in
+
+        start)
+                source /opt/ros/melodic/setup.bash
+                source /home/odroid/igvc_software_2020/igvc_ws/devel/setup.bash
+                roslaunch igvc_serial drive_demo.launch
+                ;;
+
+        *)
+                exit 1
+                ;;
+esac

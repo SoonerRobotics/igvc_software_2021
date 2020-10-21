@@ -1,0 +1,7 @@
+<launch>
+
+    <!-- Run LiDAR and configuration space generator -->
+    <node name="igvc_slam_node" pkg="igvc_slam" type="igvc_slam_node.py" output="screen"/>
+    <node name="lidar_node" pkg="igvc_vision" type="lidar_node"/>
+
+</launch>

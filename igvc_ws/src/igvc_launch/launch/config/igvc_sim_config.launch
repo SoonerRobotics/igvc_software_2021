@@ -1,0 +1,12 @@
+<launch>
+
+    <!-- Simulator Parameters -->
+    <param name="port" value="9090"/>
+
+    <!-- Set up the bridge to the simulator -->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+
+    <!-- Configure the robot using transforms -->
+    <include file="$(find igvc_launch)/launch/config/igvc_robot_config.launch" />
+
+</launch>

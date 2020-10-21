@@ -1,0 +1,8 @@
+<launch>
+  <node name="joy" pkg="joy" type="joy_node">
+    <param name="autorepeat_rate" type="double" value="20.0" />
+    <param name="coalesce_interval" type="double" value="0.05" />
+  </node>
+  <node name="serial_node" pkg="igvc_serial" type="serial_node.py" output="screen"/>
+  <node name="manual_node" pkg="igvc_serial"  type="manual_node.py"/>
+</launch>

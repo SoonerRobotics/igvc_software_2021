@@ -1,0 +1,9 @@
+<launch>
+
+    <!-- EKF node -->
+    <node pkg="igvc_ekf" type="igvc_ekf_node" name="igvc_ekf_node" output="screen" />
+
+    <!-- EKF Data Plotter -->
+    <node pkg="igvc_ekf" type="ekf_plotter.py" name="ekf_plotter" output="screen" />
+
+</launch>
