@@ -1,4 +1,4 @@
-FROM osrf/ros:melodic-desktop-full
+FROM osrf/ros:noetic-desktop-full
 
 # Make the IGVC workspace directory
 RUN mkdir -p /igvc/igvc_ws/src
@@ -14,4 +14,4 @@ RUN /bin/bash -c './common.sh'
 
 # Navigate into the workspace and make
 WORKDIR /igvc/igvc_ws
-RUN /bin/bash -c '. /opt/ros/melodic/setup.bash; catkin_make'
+RUN /bin/bash -c '. /opt/ros/noetic/setup.bash; catkin_make'
