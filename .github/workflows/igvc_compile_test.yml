@@ -1,0 +1,16 @@
+name: IGVC Weekly Compile Test
+
+on:
+  schedule:
+    # Run every Monday at 8:00 AM Central Time
+    - cron:  '0 14 * * 1'
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build docker image
+        run: docker build . --file Dockerfile
