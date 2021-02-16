@@ -16,7 +16,7 @@ service udev restart
 
 ## vcs
 # Install pip
-sudo apt-get install python3-pip -y
+sudo apt-get install python3-pip git -y
 
 # Install vcstool
 sudo pip3 install vcstool
@@ -29,16 +29,6 @@ sudo apt-get install libspatialindex-dev -y
 
 # Install python dependencies
 pip3 install -r requirements.txt
-
-# Install map_server dependencies
-sudo apt-get install libsdl-image1.2-dev and -y
-sudo apt-get install libsdl-dev -y
-
-# costmap_2d dependencies
-sudo apt-get install ros-noetic-tf2-sensor-msgs -y
-
-# tf2_sensor_msgs dependencies
-sudo apt-get install ros-noetic-tf2-sensor-msgs -y
 
 ## Kinect deps
 
@@ -53,7 +43,5 @@ sudo ldconfig /usr/local/lib64/
 
 # install deps
 cd ../wrappers/python
-sudo apt-get install cython -y
-sudo apt-get install python3-dev -y
-sudo apt-get install python3-numpy -y
+sudo apt-get install python3-dev build-essential python3-numpy -y
 sudo python3 setup.py install
