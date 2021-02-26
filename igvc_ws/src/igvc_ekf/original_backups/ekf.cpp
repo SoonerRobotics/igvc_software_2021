@@ -3,32 +3,29 @@
 
 EKF::EKF()
 {
-    // Set the covariance matrix to the identity matrix.
-    // The covariance begins as A only, so we need a 6x6 matrix (6 state vars).
-    this->P_k.setIdentity(6, 6);
-    this->P_k *= 1.25; // multiply by some constant to start out
+    // set the covariance matrix to the identity matrix
+    this->P_k.setIdentity(11, 11);
+    this->P_k *= 1.25;
 
-    // Define the process noise. Similarly, it is 6x6.
-    this->Q_k.setIdentity(6, 6);
-    this->Q_k *= 1.3; // multiply by some constant
+    // Define the process noise
+    this->Q_k.setIdentity(11, 11);
+    this->Q_k *= 1.3;
 
-    // Define the measurement noise.
-    this->R_k.setIdentity(6, 6);
-    // TODO Set specific values on the diagonal relating to our measurement uncertainties.
-    this->R_k(0, 0) = 2;
-    this->R_k(1, 1) = 2;
+    // Define the measurement noise
+    this->R_k.setIdentity(11, 11);
+    this->R_k(0, 0) = 3.395864;
+    this->R_k(1, 1) = 4.571665;
     this->R_k(3, 3) = 2;
     this->R_k(4, 4) = 2;
     this->R_k(5, 5) = 2;
 
     // Define the measurement model
-    this->H_k.setIdentity(6, 6);
+    this->H_k.setIdentity(11, 11);
 
-    // Initialize the kalman gain.
-    // It is [# of vars] tall by [# of measurement sources] wide
-    this->K_k.setZero(6, 6); //TODO count measurement sources/sensors for 2nd val
+    // Initialize the kalman gain
+    this->K_k.setZero(11, 9);
 
-    // Define identity matrix
+    // Setup identity matrix
     this->I.setIdentity(11, 11);
 }
 
@@ -75,8 +72,6 @@ double EKF::get_convergence()
 
 void EKF::calculate_dynamics(Eigen::VectorXd u_k, double dt)
 {
-    // My state will be (x, x_dot, y, y_dot, theta, theta_dot)
-
     // Velocity calculations
     double velocity = 0.5 * WHEEL_RADIUS * (x_k(8) + x_k(9));
     double x_dot    = velocity * cos(x_k(5));
@@ -86,8 +81,8 @@ void EKF::calculate_dynamics(Eigen::VectorXd u_k, double dt)
     // Position Calculations
     double x     = x_k(3) + x_dot * dt;
     double y     = x_k(4) + y_dot * dt;
-    double psi   = x_k(5) - psi_dot * dt; //local yaw
-    double theta = x_k(2) - psi_dot * dt; //global yaw
+    double psi   = x_k(5) - psi_dot * dt;
+    double theta = x_k(2) - psi_dot * dt;
 
     // GPS calculations
     double lat = x_k(0) + (x_k(6) * dt) * cos(x_k(2)) / EARTH_RADIUS;
