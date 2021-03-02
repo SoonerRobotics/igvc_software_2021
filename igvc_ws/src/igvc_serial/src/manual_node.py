@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ## Lane finder reads in the image topic and pushes out to the lane_deviation topic the current deviation from lane center.
 

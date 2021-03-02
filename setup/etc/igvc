@@ -8,13 +8,13 @@
 # Short-Description: The IGVC Bot
 ### END INIT INFO
 
-echo "" > /var/log/magellan.log
+echo "" > /var/log/igvc21.log
 
 case "$1" in
 
         start)
-                source /opt/ros/melodic/setup.bash
-                source /home/odroid/igvc_software_2020/igvc_ws/devel/setup.bash
+                source /opt/ros/noetic/setup.bash
+                source /root/igvc_software_2021/igvc_ws/devel/setup.bash
                 roslaunch igvc_serial drive_demo.launch
                 ;;
 
