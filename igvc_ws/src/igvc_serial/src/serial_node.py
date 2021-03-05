@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
 import json
@@ -31,7 +31,7 @@ class VelocitySerialReadThread(threading.Thread):
 
     def run(self):
         while not rospy.is_shutdown():
-            line = self.serial_obj.readline() # Assume all messages end in newline character. This is standard among SCR IGVC serial messages.
+            line = self.serial_obj.readline().decode()[:-1] # Assume all messages end in newline character. This is standard among SCR IGVC serial messages.
 
             if line:
                 print(line)
@@ -59,7 +59,7 @@ class GPSSerialReadThread(threading.Thread):
 
     def run(self):
         while not rospy.is_shutdown():
-            coord = self.serial_obj.readline() # Assume all messages end in newline character. This is standard among SCR IGVC serial messages.
+            coord = self.serial_obj.readline().decode()[:-1] # Assume all messages end in newline character. This is standard among SCR IGVC serial messages.
 
             try:
                 if coord:
@@ -105,17 +105,18 @@ def init_serial_node():
     motor_response_thread.start()
 
     # Setup GPS serial and publisher
-    gps_serial = serials["gps"] = serial.Serial(port = '/dev/ttyACM0', baudrate = 9600)
+    # gps_serial = serials["gps"] = serial.Serial(port = '/dev/ttyACM0', baudrate = 9600)
 
-    gps_response_thread = GPSSerialReadThread(serial_obj = serials["gps"], topic = '/igvc/gps')
-    gps_response_thread.start()
+    # gps_response_thread = GPSSerialReadThread(serial_obj = serials["gps"], topic = '/igvc/gps')
+    # gps_response_thread.start()
     
     # Wait for topic updates
     rospy.spin()
 
     # Close the serial ports when program ends
+    print("Closing threads")
     motor_serial.close()
-    gps_serial.close()
+    #gps_serial.close()
 
 if __name__ == '__main__':
     try:

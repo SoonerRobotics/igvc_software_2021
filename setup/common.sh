@@ -1,9 +1,9 @@
 #!/bin/bash
 
-## update sources
+### Update sources ### 
 sudo apt-get update
 
-## udev
+### Install udev rules ###
 
 # copy igvc.rules to rule.d
 cp etc/igvc.rules /etc/udev/rules.d/igvc.rules
@@ -14,7 +14,8 @@ service udev reload
 sleep 2
 service udev restart
 
-## vcs
+### Install vcstool ###
+
 # Install pip
 sudo apt-get install python3-pip git -y
 
@@ -24,13 +25,15 @@ sudo pip3 install vcstool
 # Install dependencies
 vcs import < igvc.deps
 
-# Install library dependencies
-sudo apt-get install libspatialindex-dev -y
+### Install ROS dependencies ###
+
+# Install apt dependencies
+sudo apt-get install libspatialindex-dev ros-noetic-joy -y
 
 # Install python dependencies
 pip3 install -r requirements.txt
 
-## Kinect deps
+### Kinect dependencies ###
 
 # build lib
 cd ../igvc_ws/src/deps/libfreenect

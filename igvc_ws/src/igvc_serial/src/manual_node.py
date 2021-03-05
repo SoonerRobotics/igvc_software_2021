@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ## Lane finder reads in the image topic and pushes out to the lane_deviation topic the current deviation from lane center.
 
@@ -17,12 +17,12 @@ def manual_control_callback(data):
 
     drivetrain_msg = motors()
     
-    drivetrain_msg.right = axes[4]**3 * 2.2
-    if abs(axes[4]) < 0.1:
+    drivetrain_msg.right = axes[1]**3 * 1.0
+    if abs(axes[1]) < 0.1:
         drivetrain_msg.right = 0
 
-    drivetrain_msg.left = axes[1]**3 * 2.2
-    if abs(axes[1]) < 0.1:
+    drivetrain_msg.left = -axes[3]**3 * 1.0
+    if abs(axes[3]) < 0.1:
         drivetrain_msg.left = 0
 
     # rospy.loginfo("manual_control callback.")
