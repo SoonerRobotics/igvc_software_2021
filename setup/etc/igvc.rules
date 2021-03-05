@@ -2,3 +2,4 @@ KERNEL=="ttyACM*", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", ENV{ID_SER
 KERNEL=="ttyACM*", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", ENV{ID_SERIAL_SHORT}=="066BFF575256716587252452", MODE:="0666", GROUP:="dialout", SYMLINK+="igvc-nucleo-452"
 KERNEL=="ttyACM*", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", ENV{ID_SERIAL_SHORT}=="066BFF3035344E5043195319", MODE:="0666", GROUP:="dialout", SYMLINK+="igvc-nucleo-319"
 KERNEL=="ttyACM*", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", ENV{ID_SERIAL_SHORT}=="0671FF3035344E5043171722", MODE:="0666", GROUP:="dialout", SYMLINK+="igvc-nucleo-722"
+KERNEL=="ttyACM*", ATTRS{idVendor}=="ad50", ATTRS{idProduct}=="60c4", ATTRS{serial}=="800500105952431220303835", MODE:="0666", GROUP:="dialout", SYMLINK+="igvc-can-835"
