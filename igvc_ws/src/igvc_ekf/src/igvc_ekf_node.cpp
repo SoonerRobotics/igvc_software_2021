@@ -20,8 +20,8 @@
 // Init the EKF
 EKF ekf;
 
-// State and control vectors
-Eigen::VectorXd x(11), u(2);
+// State, measurements, and control vectors
+Eigen::VectorXd x(6), z(6) u(2);
 
 // Measurement vector
 Eigen::VectorXd z(11);
@@ -44,17 +44,12 @@ igvc_msgs::EKFState encodeEKFState(Eigen::VectorXd x)
 {
     igvc_msgs::EKFState ekf_state;
 
-    ekf_state.latitude = x(0);
-    ekf_state.longitude = x(1);
-    ekf_state.global_heading = x(2);
-    ekf_state.x = x(3);
-    ekf_state.y = x(4);
-    ekf_state.yaw = x(5);
-    ekf_state.velocity = x(6);
-    ekf_state.yaw_rate = x(7);
-    ekf_state.left_angular_vel = x(8);
-    ekf_state.right_angular_vel = x(9);
-    ekf_state.acceleration = x(10);
+    ekf_state.x = x(0);
+    ekf_state.y_velocity = x(1);
+    ekf_state.y = x(2);
+    ekf_state.y_velocity = x(3);
+    ekf_state.yaw = x(4);
+    ekf_state.yaw_rate = x(5);
 
     return ekf_state;
 }
