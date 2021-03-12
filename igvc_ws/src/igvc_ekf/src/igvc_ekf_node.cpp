@@ -20,11 +20,11 @@
 // Init the EKF
 EKF ekf;
 
-// State, measurements, and control vectors
-Eigen::VectorXd x(6), z(6) u(2);
+// State and control vectors
+Eigen::VectorXd x(6), u(2);
 
 // Measurement vector
-Eigen::VectorXd z(11);
+Eigen::VectorXd z(6);
 double last_heading = -1010;
 double x_coord, y_coord;
 
@@ -74,7 +74,7 @@ void updateEKF(const ros::TimerEvent& time_event)
 void updateConvergence(const ros::TimerEvent& timer_event)
 {
     // If all the sensor data has been received at least once, start publishing convergence
-    if(data_init & 0xF)
+    if(data_init & 0x7) //0111 since I removed position (1 << 3)
     {
         igvc_msgs::EKFConvergence converge;
 
@@ -134,21 +134,22 @@ void updateGPS(const igvc_msgs::gps::ConstPtr& gps_msg)
 
 void updateVelocity(const igvc_msgs::velocity::ConstPtr& vel_msg)
 {
-    // Update measurement
-    z(6) = WHEEL_RADIUS * (vel_msg->leftVel + vel_msg->rightVel) / 2.0;
-    z(8) = vel_msg->leftVel;
-    z(9) = vel_msg->rightVel;
+    // Update measurements for left and right wheel velocities
+    //z(6) = WHEEL_RADIUS * (vel_msg->leftVel + vel_msg->rightVel) / 2.0;
+    z(2) = vel_msg->leftVel;
+    z(3) = vel_msg->rightVel;
 
-    // Show that the velocity has been updated
+    // Show that the velocities have been updated
     data_init |= (1 << 1);
 
-    std::string data = std::to_string(z(6)) + ", " + std::to_string(z(8)) + ", " + std::to_string(z(9)) +  "\n";
+    std::string data = std::to_string(z(2)) + ", " + std::to_string(z(3)) + "\n";
     vel_file << data;
 }
 
 void updateIMU(const sensor_msgs::Imu::ConstPtr& imu_msg)
 {
-    z(10) = imu_msg->linear_acceleration.x;
+    // acceleration
+    z(4) = imu_msg->linear_acceleration.x;
 
     // Show that the acceleration and heading have been updated
     data_init |= (1 << 2);
@@ -167,17 +168,19 @@ void updateIMU(const sensor_msgs::Imu::ConstPtr& imu_msg)
         last_heading = deg_hdg;
     }
 
-    z(7) = degreesToRadians(angleDiff(last_heading, deg_hdg)) / 0.02;   // TODO: replace with angular velocity from IMU once coordinates are established better
-    z(5) += degreesToRadians(angleDiff(last_heading, deg_hdg)); // Update local heading from change to global heading
-    z(2) = degreesToRadians(deg_hdg);                 // Update global heading
+    // TODO not sure what this is, maybe yaw rate
+    //z(4) = degreesToRadians(angleDiff(last_heading, deg_hdg)) / 0.02;   // TODO: replace with angular velocity from IMU once coordinates are established better
+    // yaw (TODO figure out which I should use)
+    //z(5) += degreesToRadians(angleDiff(last_heading, deg_hdg)); // Update local heading from change to global heading
+    z(5) = degreesToRadians(deg_hdg);                             // Update global heading
     last_heading = deg_hdg;
 
     // Update the heading file
-    std::string data = std::to_string(z(2)) + ", " + std::to_string(z(5)) + "\n";
+    std::string data = std::to_string(z(5)) + "\n";
     hdg_file << data;
 
     // Update the accel file
-    data = std::to_string(z(10)) + "\n";
+    data = std::to_string(z(4)) + "\n";
     accel_file << data;
 }
 
@@ -188,28 +191,28 @@ void updateControlSignal(const igvc_msgs::motors::ConstPtr& motors)
 }
 
 
-void updatePosition(const ros::TimerEvent& timer_event)
-{
-    // position initialization flag
-    data_init |= (1 << 3);
+// void updatePosition(const ros::TimerEvent& timer_event)
+// {
+//     // position initialization flag
+//     data_init |= (1 << 3);
 
-    // Compute time difference
-    double dt = (timer_event.current_real - timer_event.last_real).toSec();
+//     // Compute time difference
+//     double dt = (timer_event.current_real - timer_event.last_real).toSec();
 
-    // X component velocity and acceleration
-    double vx = z(6) * cos(z(5));
-    double ax = z(10) * cos(z(5));
-    x_coord += (vx * dt) + (ax * pow(dt, 2));
+//     // X component velocity and acceleration
+//     double vx = z(6) * cos(z(5));
+//     double ax = z(10) * cos(z(5));
+//     x_coord += (vx * dt) + (ax * pow(dt, 2));
 
-    // Y component velocity and acceleration
-    double vy = z(6) * sin(z(5));
-    double ay = z(10) * sin(z(5));
-    y_coord += (vy * dt) + (ay * pow(dt, 2));
+//     // Y component velocity and acceleration
+//     double vy = z(6) * sin(z(5));
+//     double ay = z(10) * sin(z(5));
+//     y_coord += (vy * dt) + (ay * pow(dt, 2));
 
-    // Update the measurement vector
-    z(3) = x_coord;
-    z(4) = y_coord;
-}
+//     // Update the measurement vector
+//     z(3) = x_coord;
+//     z(4) = y_coord;
+// }
 
 
 int main(int argc, char** argv)
@@ -219,8 +222,8 @@ int main(int argc, char** argv)
     ros::NodeHandle ekf_node;
 
     // Initialize the measurement vector
-    z.resize(11);
-    z.setZero(11);
+    z.resize(6);
+    z.setZero(6);
 
     // Initialize the x and y coordinates to 0 (the starting position)
     x_coord = 0;
@@ -243,10 +246,11 @@ int main(int argc, char** argv)
     gps_file << "lat, lon\n";
 
     // Initialize the state and control vectors
-    x.resize(11);
+    x.resize(6);
     u.resize(2);
-    x << degreesToRadians(35.194881), degreesToRadians(-97.438621), degreesToRadians(0), x_coord, y_coord, degreesToRadians(0), 0, 0, 0, 0, 0;
-    u << 0, 0; //6.3, 3.14;
+    //x << degreesToRadians(35.194881), degreesToRadians(-97.438621), degreesToRadians(0), x_coord, y_coord, degreesToRadians(0), 0, 0, 0, 0, 0;
+    x << x_coord, 0, y_coord, 0, 0, 0
+    u << 0, 0;
 
     // Initialize the EKF
     ekf.init(x);
@@ -259,7 +263,7 @@ int main(int argc, char** argv)
     ros::ServiceServer get_state_srv = ekf_node.advertiseService("/igvc_ekf/get_robot_state", &get_robot_state);
 
     // Timers
-    ros::Timer dead_reckon_update = ekf_node.createTimer(ros::Duration(0.01), &updatePosition, false);
+    //ros::Timer dead_reckon_update = ekf_node.createTimer(ros::Duration(0.01), &updatePosition, false);
     ros::Timer ekf_update = ekf_node.createTimer(ros::Duration(0.02), &updateEKF, false);
     ros::Timer converge_update = ekf_node.createTimer(ros::Duration(0.025), &updateConvergence, false);
 

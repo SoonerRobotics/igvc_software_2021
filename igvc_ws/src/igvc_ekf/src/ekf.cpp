@@ -26,10 +26,10 @@ EKF::EKF()
 
     // Initialize the kalman gain.
     // It is [# of vars] tall by [# of measurement sources] wide
-    this->K_k.setZero(6, 6); //TODO count measurement sources/sensors for 2nd val
+    this->K_k.setZero(6, 6);
 
     // Define identity matrix
-    this->I.setIdentity(11, 11);
+    this->I.setIdentity(6, 6);
 }
 
 
@@ -43,7 +43,7 @@ void EKF::init(Eigen::VectorXd x0)
 }
 
 
-Eigen::VectorXd EKF::run_filter(Eigen::VectorXd sensors, Eigen::VectorXd u_k)
+Eigen::VectorXd EKF::run_filter(Eigen::VectorXd z_k, Eigen::VectorXd u_k)
 {
     // local vars
     double cur_time;
@@ -55,10 +55,10 @@ Eigen::VectorXd EKF::run_filter(Eigen::VectorXd sensors, Eigen::VectorXd u_k)
     last_time = cur_time;
 
     // Run prediction
-    this->predict(u_k, dt);
+    this->predict(u_k, z_k, dt);
 
     // Update from prediction
-    this->update(sensors);
+    this->update(z_k);
 
     // Return the new state estimate
     return this->x_k;
@@ -71,48 +71,32 @@ double EKF::get_convergence()
 }
 
 
-
-
-void EKF::calculate_dynamics(Eigen::VectorXd u_k, double dt)
+void EKF::calculate_dynamics(Eigen::VectorXd z_k, double dt)
 {
-    // My state will be (x, x_dot, y, y_dot, theta, theta_dot)
+    // My state will be (x, x_dot, y, y_dot, yaw, yaw_dot) = x_k
+    // The measurements are (lat, lon, v_l, v_r, accel, yaw) = z_k
 
     // Velocity calculations
-    double velocity = 0.5 * WHEEL_RADIUS * (x_k(8) + x_k(9));
-    double x_dot    = velocity * cos(x_k(5));
-    double y_dot    = velocity * sin(x_k(5));
-    double psi_dot  = (WHEEL_RADIUS / WHEELBASE_LEN) * (x_k(8) - x_k(9));
+    double velocity = 0.5 * WHEEL_RADIUS * (z_k(2) + z_k(3));
+    double x_dot    = velocity * cos(x_k(4));
+    double y_dot    = velocity * sin(x_k(4));
+    double yaw_rate  = (WHEEL_RADIUS / WHEELBASE_LEN) * (z_k(2) - z_k(3));
 
     // Position Calculations
-    double x     = x_k(3) + x_dot * dt;
-    double y     = x_k(4) + y_dot * dt;
-    double psi   = x_k(5) - psi_dot * dt; //local yaw
-    double theta = x_k(2) - psi_dot * dt; //global yaw
+    double x     = x_k(0) + (x_dot * dt) + (z_k(4) * pow(dt, 2);
+    double y     = x_k(2) + (y_dot * dt) + (z_k(4) * pow(dt, 2);
+    double yaw   = x_k(4) - yaw_rate * dt; //local yaw
 
-    // GPS calculations
-    double lat = x_k(0) + (x_k(6) * dt) * cos(x_k(2)) / EARTH_RADIUS;
-    double lon = x_k(1) + (x_k(6) * dt) * sin(x_k(2)) / (EARTH_RADIUS * cos(x_k(0)));
-
-    // GPS Orientation
-    x_k(0) = lat;
-    x_k(1) = lon;
-    x_k(2) = theta;
-
-    // Local Orientation
-    x_k(3) = x;
-    x_k(4) = y;
-    x_k(5) = psi;
-
-    // Velocities
-    x_k(6) = velocity;
-    x_k(7) = psi_dot;
-
-    // Wheel velocities
-    x_k(8) = u_k(0);
-    x_k(9) = u_k(1);
+    // Update the state
+    x_k(0) = x
+    x_k(1) = x_dot
+    x_k(2) = y
+    x_k(3) = y_dot
+    x_k(4) = yaw
+    x_k(5) = yaw_rate
 }
 
-
+// TODO this whole function
 void EKF::linear_dynamics(Eigen::VectorXd u_k, double dt)
 {
     double velocity = x_k(6);
@@ -167,13 +151,12 @@ void EKF::linear_dynamics(Eigen::VectorXd u_k, double dt)
     F_k(7, 9) = -(WHEEL_RADIUS / WHEELBASE_LEN);
 }
 
-
-void EKF::predict(Eigen::VectorXd u_k, double dt)
+void EKF::predict(Eigen::VectorXd u_k, Eigen::VectorXd z_k, double dt)
 {
-    // Predict current state from past state and control signal
-    this->calculate_dynamics(u_k, dt);
+    // Predict current state from past state and measurements
+    this->calculate_dynamics(z_k, dt);
 
-    // Linearize the dynamics using a jacobian
+    // TODO Linearize the dynamics using a jacobian
     this->linear_dynamics(u_k, dt);
 
     // Update the covariance matrix
@@ -182,7 +165,7 @@ void EKF::predict(Eigen::VectorXd u_k, double dt)
 
 
 
-
+// TODO possibly need to change this to calculate the "state" values from the current measurements.
 Eigen::VectorXd EKF::get_measurement_model()
 {
     // We compare the measurements, z_k, to the current state as a one-to-one mapping
@@ -194,19 +177,20 @@ Eigen::VectorXd EKF::get_measurement_model()
 void EKF::update(Eigen::VectorXd z_k)
 {
     // Calculate the innovation (the difference between predicted measurements and the actual measurements)
-    this->yk = z_k - get_measurement_model();
+    // TODO figure out what this is supposed to be and change it accordingly.
+    this->y_k = z_k - get_measurement_model();
 
     // Find the covariance of the innovation
-    this->Sk = (this->H_k * this->P_k * this->H_k.transpose()) + this->R_k;
+    this->S_k = (this->H_k * this->P_k * this->H_k.transpose()) + this->R_k;
 
     // Convergence calculation
-    this->convergence = this->yk.transpose() * this->Sk.inverse() * this->yk;
+    this->convergence = this->y_k.transpose() * this->S_k.inverse() * this->y_k;
 
     // Compute Kalman gain
-    this->K_k = this->P_k * H_k.transpose() * Sk.inverse();
+    this->K_k = this->P_k * H_k.transpose() * S_k.inverse();
 
     // Use the kalman gain to update the state estimate
-    this->x_k = this->x_k + this->K_k * yk;
+    this->x_k = this->x_k + this->K_k * this->y_k;
 
     // Likewise, update the covariance for the state estimate
     this->P_k = (this->I - this->K_k * this->H_k) * this->P_k;
