@@ -5,3 +5,5 @@ float64 y
 float64 y_velocity
 float64 yaw
 float64 yaw_rate
+float64 left_velocity
+float64 right_velocity

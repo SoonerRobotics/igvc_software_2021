@@ -74,26 +74,31 @@ double EKF::get_convergence()
 void EKF::calculate_dynamics(Eigen::VectorXd z_k, double dt)
 {
     // My state will be (x, x_dot, y, y_dot, yaw, yaw_dot) = x_k
-    // The measurements are (lat, lon, v_l, v_r, accel, yaw) = z_k
+    // The measurements are (v_l, v_r, yaw) = z_k
 
     // Velocity calculations
-    double velocity = 0.5 * WHEEL_RADIUS * (z_k(2) + z_k(3));
-    double x_dot    = velocity * cos(x_k(4));
-    double y_dot    = velocity * sin(x_k(4));
-    double yaw_rate  = (WHEEL_RADIUS / WHEELBASE_LEN) * (z_k(2) - z_k(3));
+    double v_l = z_k(0);
+    double v_r = z_k(1);
+    double velocity = 0.5 * WHEEL_RADIUS * (v_l + v_r);
+    double x_dot    = velocity * cos(z_k(2));
+    double y_dot    = velocity * sin(z_k(2));
+    double yaw_rate = (WHEEL_RADIUS / WHEELBASE_LEN) * (v_l - v_r);
 
-    // Position Calculations
-    double x     = x_k(0) + (x_dot * dt) + (z_k(4) * pow(dt, 2);
-    double y     = x_k(2) + (y_dot * dt) + (z_k(4) * pow(dt, 2);
+    // Position Calculations (const. velocity model)
+    double x     = x_k(0) + (x_dot * dt);
+    double y     = x_k(2) + (y_dot * dt);
     double yaw   = x_k(4) - yaw_rate * dt; //local yaw
 
     // Update the state
-    x_k(0) = x
-    x_k(1) = x_dot
-    x_k(2) = y
-    x_k(3) = y_dot
-    x_k(4) = yaw
-    x_k(5) = yaw_rate
+    x_k(0) = x;
+    x_k(1) = x_dot;
+    x_k(2) = y;
+    x_k(3) = y_dot;
+    x_k(4) = yaw;
+    x_k(5) = yaw_rate;
+    x_k(6) = v_l;
+    x_k(7) = v_r;
+
 }
 
 // TODO this whole function
@@ -165,11 +170,18 @@ void EKF::predict(Eigen::VectorXd u_k, Eigen::VectorXd z_k, double dt)
 
 
 
-// TODO possibly need to change this to calculate the "state" values from the current measurements.
+// TODO make matrix H s.t. z_mapping = H * X
 Eigen::VectorXd EKF::get_measurement_model()
 {
     // We compare the measurements, z_k, to the current state as a one-to-one mapping
-    return this->x_k;
+    Eigen::VectorXd z_mapping(3);
+    z_mapping.resize(3);
+    z_mapping.setZero(3);
+    //double velocity = this->x_k(2) / cos(this->x_k(4)); //v = x_dot / cos(yaw)
+    z_mapping(0) = this->x_k(6); //v_l
+    z_mapping(1) = this->x_k(7); //v_r
+    z_mapping(2) = this->x_k(4); //yaw
+    return z_mapping;
 }
 
 
@@ -177,7 +189,6 @@ Eigen::VectorXd EKF::get_measurement_model()
 void EKF::update(Eigen::VectorXd z_k)
 {
     // Calculate the innovation (the difference between predicted measurements and the actual measurements)
-    // TODO figure out what this is supposed to be and change it accordingly.
     this->y_k = z_k - get_measurement_model();
 
     // Find the covariance of the innovation

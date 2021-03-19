@@ -21,10 +21,10 @@
 EKF ekf;
 
 // State and control vectors
-Eigen::VectorXd x(6), u(2);
+Eigen::VectorXd x(8), u(2);
 
 // Measurement vector
-Eigen::VectorXd z(6);
+Eigen::VectorXd z(3);
 double last_heading = -1010;
 double x_coord, y_coord;
 
@@ -50,6 +50,8 @@ igvc_msgs::EKFState encodeEKFState(Eigen::VectorXd x)
     ekf_state.y_velocity = x(3);
     ekf_state.yaw = x(4);
     ekf_state.yaw_rate = x(5);
+    ekf_state.left_velocity = x(6);
+    ekf_state.right_velocity = x(7);
 
     return ekf_state;
 }
@@ -58,7 +60,7 @@ igvc_msgs::EKFState encodeEKFState(Eigen::VectorXd x)
 void updateEKF(const ros::TimerEvent& time_event)
 {
     // If all sensor data has been received once
-    if(data_init & 0xF)
+    if(data_init & 0x3)
     {
         // EKF state message
         igvc_msgs::EKFState state;
@@ -74,7 +76,7 @@ void updateEKF(const ros::TimerEvent& time_event)
 void updateConvergence(const ros::TimerEvent& timer_event)
 {
     // If all the sensor data has been received at least once, start publishing convergence
-    if(data_init & 0x7) //0111 since I removed position (1 << 3)
+    if(data_init & 0x3) //0011 since I removed position, accel, and gps
     {
         igvc_msgs::EKFConvergence converge;
 
@@ -119,40 +121,40 @@ float angleDiff(float a,float b){
  ******/
 
 
-void updateGPS(const igvc_msgs::gps::ConstPtr& gps_msg)
-{
-    std::string data = std::to_string(gps_msg->latitude) + ", " + std::to_string(gps_msg->longitude) + "\n";
-    gps_file << data;
+// void updateGPS(const igvc_msgs::gps::ConstPtr& gps_msg)
+// {
+//     std::string data = std::to_string(gps_msg->latitude) + ", " + std::to_string(gps_msg->longitude) + "\n";
+//     gps_file << data;
 
-    // Update GPS coords
-    z(0) = degreesToRadians(gps_msg->latitude);   // Latitude
-    z(1) = degreesToRadians(gps_msg->longitude);  // Longitude
+//     // Update GPS coords
+//     z(0) = degreesToRadians(gps_msg->latitude);   // Latitude
+//     z(1) = degreesToRadians(gps_msg->longitude);  // Longitude
 
-    // Show the GPS has been initialized
-    data_init |= 1;
-}
+//     // Show the GPS has been initialized
+//     data_init |= 1;
+// }
 
 void updateVelocity(const igvc_msgs::velocity::ConstPtr& vel_msg)
 {
     // Update measurements for left and right wheel velocities
     //z(6) = WHEEL_RADIUS * (vel_msg->leftVel + vel_msg->rightVel) / 2.0;
-    z(2) = vel_msg->leftVel;
-    z(3) = vel_msg->rightVel;
+    z(0) = vel_msg->leftVel;
+    z(1) = vel_msg->rightVel;
 
     // Show that the velocities have been updated
-    data_init |= (1 << 1);
+    data_init |= (1);
 
-    std::string data = std::to_string(z(2)) + ", " + std::to_string(z(3)) + "\n";
+    std::string data = std::to_string(z(0)) + ", " + std::to_string(z(1)) + "\n";
     vel_file << data;
 }
 
 void updateIMU(const sensor_msgs::Imu::ConstPtr& imu_msg)
 {
     // acceleration
-    z(4) = imu_msg->linear_acceleration.x;
+    //z(4) = imu_msg->linear_acceleration.x;
 
     // Show that the acceleration and heading have been updated
-    data_init |= (1 << 2);
+    data_init |= (1 << 1);
 
     tf::Quaternion q(imu_msg->orientation.w, imu_msg->orientation.x, imu_msg->orientation.y, imu_msg->orientation.z);
     tf::Matrix3x3 m(q);
@@ -172,16 +174,16 @@ void updateIMU(const sensor_msgs::Imu::ConstPtr& imu_msg)
     //z(4) = degreesToRadians(angleDiff(last_heading, deg_hdg)) / 0.02;   // TODO: replace with angular velocity from IMU once coordinates are established better
     // yaw (TODO figure out which I should use)
     //z(5) += degreesToRadians(angleDiff(last_heading, deg_hdg)); // Update local heading from change to global heading
-    z(5) = degreesToRadians(deg_hdg);                             // Update global heading
+    z(2) = degreesToRadians(deg_hdg);                             // Update global heading
     last_heading = deg_hdg;
 
     // Update the heading file
-    std::string data = std::to_string(z(5)) + "\n";
+    std::string data = std::to_string(z(2)) + "\n";
     hdg_file << data;
 
     // Update the accel file
-    data = std::to_string(z(4)) + "\n";
-    accel_file << data;
+    //data = std::to_string(z(4)) + "\n";
+    //accel_file << data;
 }
 
 void updateControlSignal(const igvc_msgs::motors::ConstPtr& motors)
@@ -221,9 +223,9 @@ int main(int argc, char** argv)
 
     ros::NodeHandle ekf_node;
 
-    // Initialize the measurement vector
-    z.resize(6);
-    z.setZero(6);
+    // Initialize the measurement vector (v_l,v_r,yaw)
+    z.resize(3);
+    z.setZero(3);
 
     // Initialize the x and y coordinates to 0 (the starting position)
     x_coord = 0;
@@ -232,7 +234,7 @@ int main(int argc, char** argv)
     // Initialize the subscribers
     ros::Subscriber imu_sub = ekf_node.subscribe(ekf_node.resolveName("/igvc/imu"), 1, &updateIMU);
     ros::Subscriber vel_sub = ekf_node.subscribe(ekf_node.resolveName("/igvc/velocity"), 1, &updateVelocity);
-    ros::Subscriber gps_sub = ekf_node.subscribe(ekf_node.resolveName("/igvc/gps"), 1, &updateGPS);
+    //ros::Subscriber gps_sub = ekf_node.subscribe(ekf_node.resolveName("/igvc/gps"), 1, &updateGPS);
     ros::Subscriber ctrl_sub = ekf_node.subscribe(ekf_node.resolveName("/igvc/motors_raw"), 1, &updateControlSignal);
 
     // Initialize logging
@@ -246,10 +248,10 @@ int main(int argc, char** argv)
     gps_file << "lat, lon\n";
 
     // Initialize the state and control vectors
-    x.resize(6);
+    x.resize(8);
     u.resize(2);
     //x << degreesToRadians(35.194881), degreesToRadians(-97.438621), degreesToRadians(0), x_coord, y_coord, degreesToRadians(0), 0, 0, 0, 0, 0;
-    x << x_coord, 0, y_coord, 0, 0, 0
+    x << x_coord, 0, y_coord, 0, 0, 0, 0, 0
     u << 0, 0;
 
     // Initialize the EKF
