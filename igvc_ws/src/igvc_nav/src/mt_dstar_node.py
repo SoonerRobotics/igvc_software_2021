@@ -12,7 +12,7 @@ import numpy as np
 from path_planner.mt_dstar_lite import mt_dstar_lite
 from utilities.dstar_viewer import draw_dstar, setup_pyplot
 
-SHOW_PLOTS = False
+SHOW_PLOTS = True
 
 motor_pub = rospy.Publisher("/igvc/motors_raw", motors, queue_size=10)
 global_path_pub = rospy.Publisher("/igvc/global_path", Path, queue_size=1)
@@ -199,7 +199,7 @@ def mt_dstar_node():
     rospy.Subscriber("/igvc_ekf/filter_output", EKFState, ekf_callback)
 
     # Make a timer to publish new paths
-    timer = rospy.Timer(rospy.Duration(secs=0.5), make_map, oneshot=False)
+    timer = rospy.Timer(rospy.Duration(secs=2), make_map, oneshot=False)
 
     if SHOW_PLOTS:
         setup_pyplot()

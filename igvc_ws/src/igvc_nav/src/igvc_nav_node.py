@@ -7,7 +7,7 @@ from nav_msgs.msg import Path, Odometry
 from igvc_msgs.msg import motors, EKFState
 from utilities.pp_viwer import setup_pyplot, draw_pp
 
-SHOW_PLOTS = False
+SHOW_PLOTS = True
 WHEEL_RADIUS = 0.127
 
 pos = None

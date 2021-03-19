@@ -45,7 +45,7 @@ def lidar_callback(data):
                             lidar_hidden_layer[index] = 100
                         elif 0 <= (x + x_i) < 200 and 0 <= (y + y_i) < 200 and dist <= 49 and lidar_hidden_layer[index] <= dist * (-100/40) + (245/2):
                             # linearly decay
-                            lidar_hidden_layer[index] = dist * (-100/40) + (245/2)
+                            lidar_hidden_layer[index] = int(dist * (-100/40) + (245/2))
 
     # After updating the hidden layer, swap the hidden layer to the foreground to apply the configuration space
     tmp_cfg_space = lidar_config_data

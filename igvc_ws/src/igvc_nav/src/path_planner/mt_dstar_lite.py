@@ -1,9 +1,9 @@
 
 from math import sqrt
 
-from node import Node
-from search_space import SearchSpace
-from open_list import OpenList
+from .node import Node
+from .search_space import SearchSpace
+from .open_list import OpenList
 
 
 # Algorithm: http://idm-lab.org/bib/abstracts/papers/aamas10a.pdf
