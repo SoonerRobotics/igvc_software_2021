@@ -23,7 +23,7 @@ class SearchSpace:
 
     def get_node(self, pos):
         """ Gets a node at a given (row, col) position from the grid """
-        return self.grid[pos[0]][pos[1]]
+        return self.grid[pos[1]][pos[0]]
 
     def get_successors(self, node):
         succ = []

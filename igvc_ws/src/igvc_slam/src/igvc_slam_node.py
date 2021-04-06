@@ -5,6 +5,7 @@ import numpy as np
 import rospy
 
 from nav_msgs.msg import OccupancyGrid, MapMetaData
+from std_msgs.msg import Header
 
 # Publishers
 config_pub = rospy.Publisher("/igvc_slam/local_config_space", OccupancyGrid, queue_size=1)
@@ -14,6 +15,8 @@ metadata = MapMetaData()
 lidar_config_data = [0] * (200 * 200)
 lanes_camera_config_data = [0] * (200 * 200)
 lidar_hidden_layer = [0] * (200 * 200)
+header = Header()
+header.frame_id = "map"
 
 # Initializiation
 lidar_init = False
@@ -67,7 +70,8 @@ def config_space_callback(event):
         config_space = lidar_config_data
 
         # Publish the configuration space
-        config_msg = OccupancyGrid(info=metadata, data=config_space)
+        header.stamp = rospy.Time.now()
+        config_msg = OccupancyGrid(header=header, info=metadata, data=config_space)
         config_pub.publish(config_msg)
 
 

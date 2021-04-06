@@ -7,14 +7,15 @@ from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Transform, T
 from nav_msgs.msg import OccupancyGrid, Path, MapMetaData
 from igvc_msgs.msg import motors, EKFState
 from igvc_msgs.srv import EKFService
+import tf
 import copy
 import numpy as np
 from path_planner.mt_dstar_lite import mt_dstar_lite
 from utilities.dstar_viewer import draw_dstar, setup_pyplot
 
 SHOW_PLOTS = True
+USE_SIM_TRUTH = True
 
-motor_pub = rospy.Publisher("/igvc/motors_raw", motors, queue_size=10)
 global_path_pub = rospy.Publisher("/igvc/global_path", Path, queue_size=1)
 
 # Moving Target D* Lite
@@ -45,6 +46,19 @@ def ekf_callback(data):
     global curEKF
     curEKF = data
 
+def true_pose_callback(data):
+    global curEKF
+    trueEKF = EKFState()
+    trueEKF.x = data.position.x
+    trueEKF.y = data.position.y
+    quaternion = [
+        data.orientation.x,
+        data.orientation.y,
+        data.orientation.z,
+        data.orientation.w]
+    (_,yaw,_) = tf.transformations.euler_from_quaternion(quaternion)
+    trueEKF.yaw = yaw
+
 def c_space_callback(c_space):
     global cost_map, map_reference, map_init, best_pos
 
@@ -61,12 +75,12 @@ def c_space_callback(c_space):
     best_pos_cost = -1000
 
     # Only look forward for the goal
-    for row in range(200):
-        for col in range(200):
-            if row <= 101:
-                temp_cost_map[(row * 200) + col] = grid_data[(row * 200) + col]
+    for x in range(200):
+        for y in range(200):
+            if x >= 99:
+                temp_cost_map[(y * 200) + x] = grid_data[(y * 200) + x]
             else:
-                temp_cost_map[(row * 200) + col] = 100
+                temp_cost_map[(y * 200) + x] = 100
 
     # Breath-first look for good points
     # This allows us to find a point within the range of obstacles by not
@@ -76,25 +90,33 @@ def c_space_callback(c_space):
     explored = set()
 
     depth = 0
-    while depth < 50 and len(frontier) > 0:
+    while depth < 70 and len(frontier) > 0:
         curfrontier = copy.copy(frontier)
         for pos in curfrontier:
-            cost = -abs(pos[1] - 100) + depth - temp_cost_map[pos[0] * 200 + pos[1]]
+            # Cost at a point is sum of
+            # - Negative X value (encourage forward)
+            # - Positive Y value (discourage left/right)
+            # - Depth (number of breath-first search iterations)
+            # - Config space cost
+            cost = (pos[0] - 100) + -abs(pos[1] - 100) + depth - temp_cost_map[pos[1] * 200 + pos[0]]
             if cost > best_pos_cost:
                 best_pos_cost = cost
                 temp_best_pos = pos
 
             frontier.remove(pos)
-            explored.add(pos[0] * 200 + pos[1])
+            explored.add(pos[1] * 200 + pos[0])
 
-            if pos[0] < 199 and temp_cost_map[(pos[0] + 1) * 200 + pos[1]] != 100 and (pos[0] + 1) * 200 + pos[1] not in explored:
-                frontier.add((pos[0] + 1, pos[1]))
-            if pos[0] > 0 and temp_cost_map[(pos[0] - 1) * 200 + pos[1]] != 100 and (pos[0] - 1) * 200 + pos[1] not in explored:
-                frontier.add((pos[0] - 1, pos[1]))
-            if pos[1] < 199 and temp_cost_map[pos[0] * 200 + pos[1] + 1] != 100 and pos[0] * 200 + pos[1] + 1 not in explored:
-                frontier.add((pos[0], pos[1] + 1))
-            if pos[1] > 0 and temp_cost_map[pos[0] * 200 + pos[1] - 1] != 100 and pos[0] * 200 + pos[1] - 1 not in explored:
-                frontier.add((pos[0], pos[1] - 1))
+            # Look left/right for good points
+            if pos[1] < 199 and temp_cost_map[(pos[1] + 1) * 200 + pos[0]] != 100 and (pos[1] + 1) * 200 + pos[0] not in explored:
+                frontier.add((pos[0], pos[1]+1))
+            if pos[1] > 0 and temp_cost_map[(pos[1] - 1) * 200 + pos[0]] != 100 and (pos[1] - 1) * 200 + pos[0] not in explored:
+                frontier.add((pos[0], pos[1]-1))
+
+            # Look forward/back for good points
+            if pos[0] < 199 and temp_cost_map[pos[1] * 200 + pos[0] + 1] != 100 and pos[1] * 200 + pos[0] + 1 not in explored:
+                frontier.add((pos[0]+1, pos[1]))
+            if pos[0] > 0 and temp_cost_map[pos[1] * 200 + pos[0] - 1] != 100 and pos[1] * 200 + pos[0] - 1 not in explored:
+                frontier.add((pos[0]-1, pos[1]))
 
         depth += 1
 
@@ -103,20 +125,20 @@ def c_space_callback(c_space):
     best_pos = temp_best_pos
     map_init = False
 
-def path_point_to_global_pose_stamped(robot_pos, pp0, pp1):
+def path_point_to_global_pose_stamped(robot_pos, pp0, pp1, header):
     # Local path
-    x = (robot_pos[0] - pp0) * GRID_SIZE
-    y = (robot_pos[1] - pp1) * GRID_SIZE
+    x = (pp0 - robot_pos[0]) * GRID_SIZE
+    y = (pp1 - robot_pos[1]) * GRID_SIZE
 
     # Translate to global path
     dx = map_reference[0]
     dy = map_reference[1]
-    psi = map_reference[2]
+    psi = curEKF.yaw - map_reference[2]
 
     new_x = x * math.cos(psi) - y * math.sin(psi) + dx
     new_y = y * math.cos(psi) + x * math.sin(psi) + dy
 
-    pose_stamped = PoseStamped()
+    pose_stamped = PoseStamped(header=header)
     pose_stamped.pose = Pose()
 
     point = Point()
@@ -135,7 +157,7 @@ def make_map(c_space):
     # Reset the path
     path = None
 
-    robot_pos = (100 - int((curEKF.x - map_reference[0]) / GRID_SIZE), 100 - int((curEKF.y - map_reference[1]) / GRID_SIZE))
+    robot_pos = (100, 100)
 
     # MOVING TARGET D*LITE
     # If this is the first time receiving a map, or if the path failed to be made last time (for robustness),
@@ -160,8 +182,6 @@ def make_map(c_space):
         path = planner.replan(robot_pos, best_pos, cost_map) #, map_shift) # TODO: add in shifting
 
     if path is not None:
-        global_path = Path()
-
         header = Header()
         header.seq = path_seq
         header.stamp = rospy.Time.now()
@@ -169,8 +189,8 @@ def make_map(c_space):
 
         path_seq += 1
 
-        global_path.header = header
-        global_path.poses = [path_point_to_global_pose_stamped(robot_pos, path_point[0], path_point[1]) for path_point in path]
+        global_path = Path(header = header)
+        global_path.poses = [path_point_to_global_pose_stamped(robot_pos, path_point[0], path_point[1], header) for path_point in path]
         global_path.poses.reverse() # reverse path becuz its backwards lol
 
         global_path_pub.publish(global_path)
@@ -196,10 +216,13 @@ def mt_dstar_node():
 
     # Subscribe to necessary topics
     rospy.Subscriber("/igvc_slam/local_config_space", OccupancyGrid, c_space_callback, queue_size=1)  # Mapping
-    rospy.Subscriber("/igvc_ekf/filter_output", EKFState, ekf_callback)
+    if USE_SIM_TRUTH:
+        rospy.Subscriber("/sim/true_pose", Pose, true_pose_callback)
+    else:
+        rospy.Subscriber("/igvc_ekf/filter_output", EKFState, ekf_callback)
 
     # Make a timer to publish new paths
-    timer = rospy.Timer(rospy.Duration(secs=2), make_map, oneshot=False)
+    timer = rospy.Timer(rospy.Duration(secs=0.5), make_map, oneshot=False)
 
     if SHOW_PLOTS:
         setup_pyplot()

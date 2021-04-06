@@ -24,11 +24,18 @@ void onLidarCallback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
 	//Instantiate message to publish to
 	nav_msgs::OccupancyGrid map_data;
+
 	// Change the map meta data. Can also choose origin?
 	nav_msgs::MapMetaData map_info;
 	map_info.resolution = RESOLUTION;
 	map_info.width = DIMENSIONS;
 	map_info.height = DIMENSIONS;
+
+	geometry_msgs::Pose origin;
+	origin.position.x = -DIMENSIONS / 2 * RESOLUTION;
+	origin.position.y = -DIMENSIONS / 2 * RESOLUTION;
+	map_info.origin = origin;
+
 	// Give map meta data to occupancy grid
 	map_data.info = map_info;
 	// Set up a vector to handle the lidar data
@@ -49,7 +56,7 @@ void onLidarCallback(const sensor_msgs::LaserScan::ConstPtr &msg)
 			float x = ranges[i] * cos(angle);
 			float y = ranges[i] * sin(angle);
 			// Convert to number of indices away from LiDAR
-			int index = (LIDAR_POS - round(x / RESOLUTION)) * DIMENSIONS + (LIDAR_POS - round(y / RESOLUTION));
+			int index = (LIDAR_POS - round(y / RESOLUTION)) * DIMENSIONS + (LIDAR_POS + round(x / RESOLUTION));
 			// Save value to save on text
 			int cur_val = lidar_data[index];
 			// If the indice already has an obstacle, increment "certainty"
