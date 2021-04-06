@@ -73,7 +73,7 @@ double EKF::get_convergence()
 
 void EKF::calculate_dynamics(Eigen::VectorXd z_k, double dt)
 {
-    // My state will be (x, x_dot, y, y_dot, yaw, yaw_dot) = x_k
+    // My state will be (x, x_dot, y, y_dot, yaw, yaw_dot, v_l, v_r) = x_k
     // The measurements are (v_l, v_r, yaw) = z_k
 
     // Velocity calculations

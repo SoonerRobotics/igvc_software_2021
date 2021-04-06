@@ -153,7 +153,7 @@ void updateIMU(const sensor_msgs::Imu::ConstPtr& imu_msg)
     // acceleration
     //z(4) = imu_msg->linear_acceleration.x;
 
-    // Show that the acceleration and heading have been updated
+    // Show that the heading has been updated
     data_init |= (1 << 1);
 
     tf::Quaternion q(imu_msg->orientation.w, imu_msg->orientation.x, imu_msg->orientation.y, imu_msg->orientation.z);
