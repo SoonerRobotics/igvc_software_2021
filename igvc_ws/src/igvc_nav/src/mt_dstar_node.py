@@ -48,16 +48,11 @@ def ekf_callback(data):
 
 def true_pose_callback(data):
     global curEKF
-    trueEKF = EKFState()
-    trueEKF.x = data.position.x
-    trueEKF.y = data.position.y
-    quaternion = [
-        data.orientation.x,
-        data.orientation.y,
-        data.orientation.z,
-        data.orientation.w]
-    (_,yaw,_) = tf.transformations.euler_from_quaternion(quaternion)
-    trueEKF.yaw = yaw
+    curEKF = EKFState()
+    curEKF.x = data.position.x
+    curEKF.y = data.position.y
+    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([-data.orientation.z, data.orientation.x, -data.orientation.y, data.orientation.w])
+    curEKF.yaw = yaw
 
 def c_space_callback(c_space):
     global cost_map, map_reference, map_init, best_pos
@@ -77,7 +72,7 @@ def c_space_callback(c_space):
     # Only look forward for the goal
     for x in range(200):
         for y in range(200):
-            if x >= 99:
+            if x >= 100:
                 temp_cost_map[(y * 200) + x] = grid_data[(y * 200) + x]
             else:
                 temp_cost_map[(y * 200) + x] = 100
@@ -90,7 +85,7 @@ def c_space_callback(c_space):
     explored = set()
 
     depth = 0
-    while depth < 70 and len(frontier) > 0:
+    while depth < 60 and len(frontier) > 0:
         curfrontier = copy.copy(frontier)
         for pos in curfrontier:
             # Cost at a point is sum of
@@ -132,8 +127,9 @@ def path_point_to_global_pose_stamped(robot_pos, pp0, pp1, header):
 
     # Translate to global path
     dx = map_reference[0]
+    print(f"map dx {dx}")
     dy = map_reference[1]
-    psi = curEKF.yaw - map_reference[2]
+    psi = map_reference[2]
 
     new_x = x * math.cos(psi) - y * math.sin(psi) + dx
     new_y = y * math.cos(psi) + x * math.sin(psi) + dy

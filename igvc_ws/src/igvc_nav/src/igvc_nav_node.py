@@ -8,7 +8,7 @@ from nav_msgs.msg import Path, Odometry
 from igvc_msgs.msg import motors, EKFState
 from utilities.pp_viwer import setup_pyplot, draw_pp
 
-SHOW_PLOTS = False
+SHOW_PLOTS = True
 USE_SIM_TRUTH = True
 WHEEL_RADIUS = 0.104
 
@@ -17,28 +17,6 @@ heading = None
 publy = rospy.Publisher('/igvc/motors_raw', motors, queue_size=1)
 
 pp = PurePursuit()
-
-def euler_from_quaternion(x, y, z, w):
-        """
-        Convert a quaternion into euler angles (roll, pitch, yaw)
-        roll is rotation around x in radians (counterclockwise)
-        pitch is rotation around y in radians (counterclockwise)
-        yaw is rotation around z in radians (counterclockwise)
-        """
-        t0 = +2.0 * (w * x + y * z)
-        t1 = +1.0 - 2.0 * (x * x + y * y)
-        roll_x = math.atan2(t0, t1)
-     
-        t2 = +2.0 * (w * y - z * x)
-        t2 = +1.0 if t2 > +1.0 else t2
-        t2 = -1.0 if t2 < -1.0 else t2
-        pitch_y = math.asin(t2)
-     
-        t3 = +2.0 * (w * z + x * y)
-        t4 = +1.0 - 2.0 * (y * y + z * z)
-        yaw_z = math.atan2(t3, t4)
-     
-        return roll_x, pitch_y, yaw_z # in radians
 
 def ekf_update(ekf_state):
     global pos, heading
@@ -58,7 +36,7 @@ def true_pose_callback(data):
         data.orientation.z,
         data.orientation.w)
 
-    (roll, pitch, yaw) = euler_from_quaternion(-data.orientation.z, data.orientation.x, -data.orientation.y, data.orientation.w)
+    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([-data.orientation.z, data.orientation.x, -data.orientation.y, data.orientation.w])
     
     # if pitch > 0 and yaw > 0:
     #     yaw = math.pi - yaw
@@ -92,7 +70,7 @@ def timer_callback(event):
     cur_pos = (pos[0], pos[1])
 
     lookahead = None
-    radius = 0.6 # Starting radius
+    radius = 0.8 # Starting radius
 
     while lookahead is None and radius <= 3: # Look until we hit 3 meters max
         lookahead = pp.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
@@ -120,8 +98,8 @@ def timer_callback(event):
         # Add proprtional error for turning.
         # TODO: PID instead of just P
         motor_pkt = motors()
-        motor_pkt.left = (forward_speed - 0.5 * error) / WHEEL_RADIUS
-        motor_pkt.right = (forward_speed + 0.5 * error) / WHEEL_RADIUS
+        motor_pkt.left = (forward_speed - 0.8 * error) / WHEEL_RADIUS
+        motor_pkt.right = (forward_speed + 0.8 * error) / WHEEL_RADIUS
 
         publy.publish(motor_pkt)
 
