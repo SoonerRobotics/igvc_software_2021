@@ -17,13 +17,13 @@ def manual_control_callback(data):
 
     drivetrain_msg = motors()
     
-    drivetrain_msg.right = axes[1]**3 * 1.0
+    drivetrain_msg.left = axes[1]**3 * 0.8
     if abs(axes[1]) < 0.1:
-        drivetrain_msg.right = 0
-
-    drivetrain_msg.left = -axes[3]**3 * 1.0
-    if abs(axes[3]) < 0.1:
         drivetrain_msg.left = 0
+
+    drivetrain_msg.right = axes[3]**3 * 0.8
+    if abs(axes[3]) < 0.1:
+        drivetrain_msg.right = 0
 
     # rospy.loginfo("manual_control callback.")
     manual_control_pub.publish(drivetrain_msg)
