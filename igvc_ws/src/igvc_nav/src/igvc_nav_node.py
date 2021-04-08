@@ -30,13 +30,7 @@ def ekf_update(ekf_state):
 def true_pose_callback(data):
     global pos, heading
 
-    quaternion = (
-        data.orientation.x,
-        data.orientation.y,
-        data.orientation.z,
-        data.orientation.w)
-
-    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([-data.orientation.z, data.orientation.x, -data.orientation.y, data.orientation.w])
+    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([data.orientation.x, data.orientation.y, data.orientation.z, data.orientation.w])
     
     # if pitch > 0 and yaw > 0:
     #     yaw = math.pi - yaw
@@ -70,7 +64,7 @@ def timer_callback(event):
     cur_pos = (pos[0], pos[1])
 
     lookahead = None
-    radius = 0.8 # Starting radius
+    radius = 0.6 # Starting radius
 
     while lookahead is None and radius <= 3: # Look until we hit 3 meters max
         lookahead = pp.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
@@ -89,10 +83,10 @@ def timer_callback(event):
         # Normalize error to -1 to 1 scale
         error = get_angle_diff(heading, heading_to_lookahead)/180
 
-        print(f"error is {error}")
+        # print(f"error is {error}")
 
         # Base forward velocity for both wheels
-        forward_speed = 0.6 * (1 - abs(error))**5
+        forward_speed = 1.0 * (1 - abs(error))**5
 
         # Define wheel linear velocities
         # Add proprtional error for turning.

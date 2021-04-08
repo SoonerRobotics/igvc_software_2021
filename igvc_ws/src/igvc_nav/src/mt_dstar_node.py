@@ -51,7 +51,7 @@ def true_pose_callback(data):
     curEKF = EKFState()
     curEKF.x = data.position.x
     curEKF.y = data.position.y
-    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([-data.orientation.z, data.orientation.x, -data.orientation.y, data.orientation.w])
+    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([data.orientation.x, data.orientation.y, data.orientation.z, data.orientation.w])
     curEKF.yaw = yaw
 
 def c_space_callback(c_space):
@@ -85,7 +85,7 @@ def c_space_callback(c_space):
     explored = set()
 
     depth = 0
-    while depth < 60 and len(frontier) > 0:
+    while depth < 50 and len(frontier) > 0:
         curfrontier = copy.copy(frontier)
         for pos in curfrontier:
             # Cost at a point is sum of
@@ -127,7 +127,6 @@ def path_point_to_global_pose_stamped(robot_pos, pp0, pp1, header):
 
     # Translate to global path
     dx = map_reference[0]
-    print(f"map dx {dx}")
     dy = map_reference[1]
     psi = map_reference[2]
 

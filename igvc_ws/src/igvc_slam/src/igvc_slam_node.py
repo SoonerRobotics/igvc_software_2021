@@ -20,7 +20,7 @@ header.frame_id = "map"
 
 # Initializiation
 lidar_init = False
-
+last_vision = None
 
 def lidar_callback(data):
     # use the global vars
@@ -28,6 +28,10 @@ def lidar_callback(data):
 
     # Reset the hidden layer
     lidar_hidden_layer = [0] * (200 * 200)
+
+    cap_last_vision = last_vision
+    pog = [x+y for x,y in zip(data.data, cap_last_vision)]
+    data.data = pog
 
     # HACK: eventually set this to be based on the map size and stuff
     metadata = MapMetaData(map_load_time = data.info.map_load_time, resolution=data.info.resolution,
@@ -38,17 +42,17 @@ def lidar_callback(data):
     for x in range(200):
         for y in range(200):
             if data.data[x + y * 200] > 0:
-                for x_i in range(-7,7):
-                    for y_i in range(-7,7):
+                for x_i in range(-8,8):
+                    for y_i in range(-8,8):
                         dist = (x_i)**2 + (y_i)**2
                         index = ((x + x_i)) + 200 * (y + y_i)
 
                         if 0 <= (x + x_i) < 200 and 0 <= (y + y_i) < 200 and dist <= 9 and lidar_hidden_layer[index] <= 100:
                             # obstacle expansion
                             lidar_hidden_layer[index] = 100
-                        elif 0 <= (x + x_i) < 200 and 0 <= (y + y_i) < 200 and dist <= 49 and lidar_hidden_layer[index] <= dist * (-100/40) + (245/2):
+                        elif 0 <= (x + x_i) < 200 and 0 <= (y + y_i) < 200 and dist <= 64 and lidar_hidden_layer[index] <= dist * (-100/55) + (1280/11):
                             # linearly decay
-                            lidar_hidden_layer[index] = int(dist * (-100/40) + (245/2))
+                            lidar_hidden_layer[index] = int(dist * (-100/55) + (1280/11))
 
     # After updating the hidden layer, swap the hidden layer to the foreground to apply the configuration space
     tmp_cfg_space = lidar_config_data
@@ -56,9 +60,9 @@ def lidar_callback(data):
     lidar_hidden_layer = tmp_cfg_space
 
 
-def lanes_camera_callback():
-    pass
-
+def lanes_camera_callback(data):
+    global last_vision
+    last_vision = data.data
 
 # TODO: currently this whole thing is set to use the most recent map frames from each perception unit (which is fine for now). In the future the sizing will change as the map grows.
 def config_space_callback(event):
@@ -82,6 +86,7 @@ def igvc_slam_node():
 
     # Subscribe to necessary topics
     map_sub = rospy.Subscriber("/igvc_vision/map", OccupancyGrid, lidar_callback, queue_size=10)
+    vision_sub = rospy.Subscriber("/igvc/lane_map", OccupancyGrid, lanes_camera_callback, queue_size=10)
 
     # Make a timer to publish configuration spaces periodically
     timer = rospy.Timer(rospy.Duration(secs=0.2), config_space_callback, oneshot=False)
