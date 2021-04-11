@@ -8,11 +8,7 @@ import time
 # bus = can.interface.Bus(bustype='slcan', channel='/dev/ttyACM0', bitrate=100000)
 
 # Stock slcan firmware on Windows
-<<<<<<< HEAD
-bus = can.interface.Bus(bustype='slcan', channel='COM7', bitrate=100000)
-=======
 bus = can.interface.Bus(bustype='slcan', channel='/dev/igvc-can-835', bitrate=100000)
->>>>>>> 7af85f818cdfcbb126dbfa3edf15a500e7282504
 
 msg = can.Message(arbitration_id=0xc0ffee,
                   data=[0, 25, 0, 1, 3, 1, 4, 1],
