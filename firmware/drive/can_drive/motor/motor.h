@@ -38,7 +38,7 @@ class IGVCMotor {
             this->last_state = 0.0f;
             
             // Equation constants
-            this->kP = 0.005f;
+            this->kP = 0.05f;
             this->kI = 0.0f;
             this->kD = 0.0001f;
         }
