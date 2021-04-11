@@ -4,6 +4,8 @@ import rospy
 import json
 import threading
 import serial
+import can
+import struct
 
 from std_msgs.msg import String
 from igvc_msgs.msg import motors, velocity, gps
@@ -13,34 +15,40 @@ from igvc_msgs.msg import motors, velocity, gps
 # Publishes GPS coordinates
 
 serials = {}
+cans = {}
 
-class VelocitySerialReadThread(threading.Thread):
-    def __init__(self, serial_obj, topic):
+MAX_SPEED = 2.2 # m/s
+CAN_SEND_VELOCITY_ID = 10
+CAN_RECV_VELOCITY_ID = 11
+
+class VelocityCANReadThread(threading.Thread):
+    def __init__(self, can_obj, topic):
         threading.Thread.__init__(self)
 
-        self.serial_obj = serial_obj
+        self.can_obj = can_obj
 
         # Allow timeout of up to 1 second on reads. This could be set to None to have infinite timeout,
         # but that would hault the node when it tries to exit. Need to make sure the while loop condition is
         # semi-regularly checked. This is better than rospy.Rate because it will continously wait for new message
         # instead of only checking on a fixed interval.
-        self.serial_obj.timeout = 1
+        # self.can_obj.timeout = 1
 
         # Assumes String type for now. This class will need to be adapted in the future for different message types.
         self.publisher = rospy.Publisher(topic, velocity, queue_size=1)
 
     def run(self):
         while not rospy.is_shutdown():
-            line = self.serial_obj.readline().decode()[:-1] # Assume all messages end in newline character. This is standard among SCR IGVC serial messages.
+            msg = self.can_obj.recv(timeout=1)
 
-            if line:
-                print(line)
-                vels = line.split(",")
+            if msg and msg.arbitration_id == CAN_RECV_VELOCITY_ID:
+                left_speed, right_speed, max_speed = struct.unpack("bbB", msg.data)
+
                 velPkt = velocity()
-                velPkt.leftVel = float(vels[0])
-                velPkt.rightVel = float(vels[1])
+                velPkt.leftVel = left_speed / 127 * max_speed / 10
+                velPkt.leftVel = right_speed / 127 * max_speed / 10
 
                 self.publisher.publish(velPkt)
+
 
 class GPSSerialReadThread(threading.Thread):
     def __init__(self, serial_obj, topic):
@@ -76,18 +84,14 @@ class GPSSerialReadThread(threading.Thread):
 
 # Constructs motor message from given data and sends to serial
 def motors_out(data):
+    left_speed = int(data.left / MAX_SPEED * 127)
+    right_speed = int(data.right / MAX_SPEED * 127)
 
-    # JSON packet to be sent
-    motion_pkt = {
-        "motorLeft": data.left,
-        "motorRight": data.right,
-    }
+    packed_data = pack('bbB', left_speed, right_speed, int(MAX_SPEED * 10))
 
-    # Encode JSON string to bytes
-    json_dump = json.dumps(motion_pkt, separators = (',', ':'))
-    out = (json_dump + "\n").encode()
+    can_msg = can.Message(arbitration_id=CAN_SEND_VELOCITY_ID, data=packed_data)
 
-    serials["motor"].write(out)
+    cans["motor"].send(can_msg)
 
 
 # Initialize the serial node
@@ -98,10 +102,11 @@ def init_serial_node():
     rospy.init_node("serial_node", anonymous = False)
 
     # Setup motor serial and subscriber
-    motor_serial = serials["motor"] = serial.Serial(port = '/dev/igvc-nucleo-120', baudrate = 115200)
+    # motor_serial = serials["motor"] = serial.Serial(port = '/dev/igvc-nucleo-120', baudrate = 115200)
+    motor_can = cans["motor"] = can.interface.ThreadSafeBus(bustype='slcan', channel='/dev/igvc-can-835', bitrate=100000)
     rospy.Subscriber('/igvc/motors_raw', motors, motors_out)
     
-    motor_response_thread = VelocitySerialReadThread(serial_obj = serials["motor"], topic = '/igvc/velocity')
+    motor_response_thread = VelocityCANReadThread(can_obj = cans["motor"], topic = '/igvc/velocity')
     motor_response_thread.start()
 
     # Setup GPS serial and publisher
