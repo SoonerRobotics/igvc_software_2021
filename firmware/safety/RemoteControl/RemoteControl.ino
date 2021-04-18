@@ -2,7 +2,6 @@
 #include <RH_RF95.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
-#include "credentials.h"
 
 #define RFM95_CS 8
 #define RFM95_RST 4
