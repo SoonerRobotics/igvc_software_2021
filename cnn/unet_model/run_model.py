@@ -8,7 +8,7 @@ from image_processing import *
 from unet import *
 
 # Load the images
-ins, ins_filenames = read_images_from_directory("./example/video_frames", "fv_[\d]*.png", processing='in')
+ins, ins_filenames = read_images_from_directory("./example/video_frames", "img_[\d]*.png", processing='in')
 
 # Reload the model
 model = tf.keras.models.load_model('./results/SCRUNet_model')

@@ -10,6 +10,12 @@ def readPNG(filename, processing = None):
 
     # Process image
     if processing == 'in':
+
+        # Histogram equalization of HSV value channel
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        image[:,:,2] = cv2.equalizeHist(image[:,:,2])
+        image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+
         image = cv2.transpose(image) / 255.0
         image = cv2.resize(image, (256, 256))
 

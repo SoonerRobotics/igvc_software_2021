@@ -10,13 +10,27 @@ Run `train_model.py`. Arguments can be used to modify the training, using `-h` t
 
 # Data prepping
 
-Convert images to a video
+Convert video to images
 
-```ffmpeg -r 10 -f image2 -i img_%04d.png output.mp4```
+```ffmpeg -i input.mp4 -r 8 example/video_frames/img_%04d.png```
 
-Convert videos to an image
+Convert images to video
 
-```ffmpeg -i output.mp4 -r 10 img_%04d.png```
+```ffmpeg -r 8 -f image2 -i example/video_prediction/f%04d.png output.mp4```
+
+Put two videos next to each other
+
+```
+ffmpeg \
+  -i input.mp4 \
+  -i output.mp4 \
+  -filter_complex '[0:v]pad=iw*2:ih[int];[int][1:v]overlay=W/2:0[vid]' \
+  -map '[vid]' \
+  -c:v libx264 \
+  -crf 23 \
+  -preset veryfast \
+  combined_output.mp4
+```
 
 Resize args
 
