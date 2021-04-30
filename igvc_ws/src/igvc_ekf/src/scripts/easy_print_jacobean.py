@@ -7,17 +7,13 @@ from sympy import pprint
 
 
 # Constants
-wheelbase_len = 0.84455         # Wheelbase length (meters)
-wheel_rad = 0.127   # Wheel radius (meters)
-#R = 6378137         # Earth radius (meters)
+wheelbase_len = 0.84455 # Wheelbase length (meters)
+wheel_rad = 0.127 # Wheel radius (meters)
+#R = 6378137 # Earth radius (meters)
 
-# Sympy stuff
-x = Symbol("x")
-y = Symbol("y")
-phi = Symbol("phi")
-l = Symbol("l")
-r = Symbol("r")
-t = Symbol("t")
+x_dot = Symbol("\dot{x}")
+y_dot = Symbol("\dot{y}")
+phi_dot = Symbol("\dot{phi}")
 
 # State variables
 state_vars = ["x","x_dot","y","y_dot","phi","phi_dot","l","r"] #l=v_l, r=v_r
@@ -25,29 +21,29 @@ state_vars = ["x","x_dot","y","y_dot","phi","phi_dot","l","r"] #l=v_l, r=v_r
 # Differential drive approximation
 # Velocity calculations
 v_k = 0.5 * wheel_rad * (l + r)
-x_dot = v_k * cos(phi)
-y_dot = v_k * sin(phi)
-phi_dot = (wheel_rad / wheelbase_len) * (l - r)
+x_dot_k = v_k * cos(phi)
+y_dot_k = v_k * sin(phi)
+phi_dot_k = (wheel_rad / wheelbase_len) * (l - r)
 
 # Position calculations
 x_k = x + x_dot * t
 y_k = y + y_dot * t
 phi_k = phi + phi_dot * t
 
-# Setup state transition matrix
+# Setup vector of the functions
 f = Matrix([
     x_k,
-    x_dot,
+    x_dot_k,
     y_k,
-    y_dot,
+    y_dot_k,
     phi_k,
-    phi_dot,
+    phi_dot_k,
     l,
     r
     ])
 
-# Make list of symbols appearing in equations in f
-X = Matrix([x,y,phi,l,r,t])
+# Setup vector of the variables
+X = Matrix([x,x_dot,y,y_dot,phi,phi_dot,l,r])
 
 # IGVC Fk matrix
 model = f
