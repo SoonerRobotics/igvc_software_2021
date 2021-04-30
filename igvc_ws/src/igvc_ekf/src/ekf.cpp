@@ -98,7 +98,6 @@ void EKF::calculate_dynamics(Eigen::VectorXd z_k, double dt)
     x_k(5) = yaw_rate;
     x_k(6) = v_l;
     x_k(7) = v_r;
-
 }
 
 // this function mirrors the jacobean matrix in scripts/jacobean.txt
@@ -116,33 +115,27 @@ void EKF::linear_dynamics(Eigen::VectorXd u_k, double dt)
     // column 1:
     F_k(0,0) = 1;
     // column 2:
-    F_k(2,1) = 1;
+    F_k(0,1) = dt;
     // column 3:
-    F_k(0,2) = -dt * (0.5 * WHEEL_RADIUS * (l + r)) * sin_phi;
-    F_k(1,2) = -(0.5 * WHEEL_RADIUS * (l + r)) * sin_phi;
-    F_k(2,2) = dt * (0.5 * WHEEL_RADIUS * (l + r)) * cos_phi;
-    F_k(3,2) = (0.5 * WHEEL_RADIUS * (l + r)) * cos_phi;
-    F_k(4,2) = 1;
+    F_k(2,2) = 1;
     // column 4:
-    F_k(0,3) = dt * (0.5 * WHEEL_RADIUS) * cos_phi;
-    F_k(1,3) = (0.5 * WHEEL_RADIUS) * cos_phi;
-    F_k(2,3) = dt * (0.5 * WHEEL_RADIUS) * sin_phi;
-    F_k(3,3) = (0.5 * WHEEL_RADIUS) * sin_phi;
-    F_k(4,3) = dt * (WHEEL_RADIUS / WHEELBASE_LEN);
-    F_k(5,3) = (WHEEL_RADIUS / WHEELBASE_LEN);
-    F_k(6,3) = 1;
+    F_k(2,3) = dt;
     // column 5:
-    F_k(0,4) = dt * (0.5 * WHEEL_RADIUS) * cos_phi;
-    F_k(1,4) = (0.5 * WHEEL_RADIUS) * cos_phi;
-    F_k(2,4) = dt * (0.5 * WHEEL_RADIUS) * sin_phi;
-    F_k(3,4) = (0.5 * WHEEL_RADIUS) * sin_phi;
-    F_k(4,4) = -dt * (WHEEL_RADIUS / WHEELBASE_LEN);
-    F_k(5,4) = -(WHEEL_RADIUS / WHEELBASE_LEN);
-    F_k(7,4) = 1;
+    F_k(1,4) = -1 * (0.5 * WHEEL_RADIUS) * (l + r) * sin_phi;
+    F_k(3,4) = (0.5 * WHEEL_RADIUS) * (l + r) * cos_phi;
+    F_k(4,4) = 1;
     // column 6:
-    F_k(0,5) = (0.5 * WHEEL_RADIUS * (l + r)) * cos_phi;
-    F_k(2,5) = (0.5 * WHEEL_RADIUS * (l + r)) * sin_phi;
-    F_k(4,5) = (WHEEL_RADIUS / WHEELBASE_LEN) * (l-r);
+    F_k(4,5) = dt;
+    // column 7:
+    F_k(1,6) = (0.5 * WHEEL_RADIUS) * cos_phi;
+    F_k(3,6) = (0.5 * WHEEL_RADIUS) * sin_phi;
+    F_k(5,6) = WHEEL_RADIUS / WHEELBASE_LEN;
+    F_k(6,6) = 1;
+    // column 8:
+    F_k(1,7) = -1 * (0.5 * WHEEL_RADIUS) * cos_phi;
+    F_k(3,7) = (0.5 * WHEEL_RADIUS) * sin_phi;
+    F_k(5,7) = -WHEEL_RADIUS / WHEELBASE_LEN;
+    F_k(7,7) = 1;
 }
 
 void EKF::predict(Eigen::VectorXd u_k, Eigen::VectorXd z_k, double dt)
