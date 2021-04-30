@@ -101,59 +101,48 @@ void EKF::calculate_dynamics(Eigen::VectorXd z_k, double dt)
 
 }
 
-// TODO this whole function
+// this function mirrors the jacobean matrix in scripts/jacobean.txt
 void EKF::linear_dynamics(Eigen::VectorXd u_k, double dt)
 {
-    double velocity = x_k(6);
-    double left_vel = x_k(8);
-    double right_vel = x_k(9);
+    // grab state vars and perform frequent operations beforehand
+    double l = x_k(6);
+    double r = x_k(7);
+    double sin_phi = sin(x_k(4));
+    double cos_phi = cos(x_k(4));
 
-    double sin_phi = cos(x_k(0));
-    double cos_phi = cos(x_k(0));
+    this->F_k.setZero(8, 6);
+    // assuming params are (row #, col #)
 
-    double sin_psi = sin(x_k(5));
-    double cos_psi = cos(x_k(5));
-
-    double sin_theta = sin(x_k(2));
-    double cos_theta = cos(x_k(2));
-
-
-    this->F_k.setIdentity(11, 11);
-
-    // latitude
-    F_k(0, 2) = -dt * velocity * sin_theta / EARTH_RADIUS;
-    F_k(0, 6) = dt * cos_theta / EARTH_RADIUS;
-
-    // longitude
-    F_k(1, 0) = dt * velocity * sin_phi * sin_theta / (EARTH_RADIUS * pow(cos_phi, 2));
-    F_k(1, 2) = dt * velocity * cos_theta / (EARTH_RADIUS * cos_phi);
-    F_k(1, 6) = dt * sin_theta / (EARTH_RADIUS * cos_phi);
-
-    // global heading
-    F_k(2, 8) = -(WHEEL_RADIUS / WHEELBASE_LEN) * dt;
-    F_k(2, 9) = (WHEEL_RADIUS / WHEELBASE_LEN) * dt;
-
-    // X
-    F_k(3, 5) = -dt * (0.5 * WHEEL_RADIUS * (left_vel + right_vel)) * sin_psi;
-    F_k(3, 8) = 0.5 * WHEEL_RADIUS * dt * cos_psi;
-    F_k(3, 9) = 0.5 * WHEEL_RADIUS * dt * cos_psi;
-
-    // Y
-    F_k(4, 5) = dt * (0.5 * WHEEL_RADIUS * (left_vel + right_vel)) * cos_psi;
-    F_k(4, 8) = 0.5 * WHEEL_RADIUS * dt * sin_psi;
-    F_k(4, 9) = 0.5 * WHEEL_RADIUS * dt * sin_psi;
-
-    // local heading
-    F_k(5, 8) = -(WHEEL_RADIUS / WHEELBASE_LEN) * dt;
-    F_k(5, 9) = (WHEEL_RADIUS / WHEELBASE_LEN) * dt;
-
-    // velocity
-    F_k(6, 8) = 0.5 * WHEEL_RADIUS;
-    F_k(6, 9) = 0.5 * WHEEL_RADIUS;
-
-    // angular velocity
-    F_k(7, 8) = (WHEEL_RADIUS / WHEELBASE_LEN);
-    F_k(7, 9) = -(WHEEL_RADIUS / WHEELBASE_LEN);
+    // column 1:
+    F_k(0,0) = 1;
+    // column 2:
+    F_k(2,1) = 1;
+    // column 3:
+    F_k(0,2) = -dt * (0.5 * WHEEL_RADIUS * (l + r)) * sin_phi;
+    F_k(1,2) = -(0.5 * WHEEL_RADIUS * (l + r)) * sin_phi;
+    F_k(2,2) = dt * (0.5 * WHEEL_RADIUS * (l + r)) * cos_phi;
+    F_k(3,2) = (0.5 * WHEEL_RADIUS * (l + r)) * cos_phi;
+    F_k(4,2) = 1;
+    // column 4:
+    F_k(0,3) = dt * (0.5 * WHEEL_RADIUS) * cos_phi;
+    F_k(1,3) = (0.5 * WHEEL_RADIUS) * cos_phi;
+    F_k(2,3) = dt * (0.5 * WHEEL_RADIUS) * sin_phi;
+    F_k(3,3) = (0.5 * WHEEL_RADIUS) * sin_phi;
+    F_k(4,3) = dt * (WHEEL_RADIUS / WHEELBASE_LEN);
+    F_k(5,3) = (WHEEL_RADIUS / WHEELBASE_LEN);
+    F_k(6,3) = 1;
+    // column 5:
+    F_k(0,4) = dt * (0.5 * WHEEL_RADIUS) * cos_phi;
+    F_k(1,4) = (0.5 * WHEEL_RADIUS) * cos_phi;
+    F_k(2,4) = dt * (0.5 * WHEEL_RADIUS) * sin_phi;
+    F_k(3,4) = (0.5 * WHEEL_RADIUS) * sin_phi;
+    F_k(4,4) = -dt * (WHEEL_RADIUS / WHEELBASE_LEN);
+    F_k(5,4) = -(WHEEL_RADIUS / WHEELBASE_LEN);
+    F_k(7,4) = 1;
+    // column 6:
+    F_k(0,5) = (0.5 * WHEEL_RADIUS * (l + r)) * cos_phi;
+    F_k(2,5) = (0.5 * WHEEL_RADIUS * (l + r)) * sin_phi;
+    F_k(4,5) = (WHEEL_RADIUS / WHEELBASE_LEN) * (l-r);
 }
 
 void EKF::predict(Eigen::VectorXd u_k, Eigen::VectorXd z_k, double dt)
@@ -169,8 +158,6 @@ void EKF::predict(Eigen::VectorXd u_k, Eigen::VectorXd z_k, double dt)
 }
 
 
-
-// TODO make matrix H s.t. z_mapping = H * X
 Eigen::VectorXd EKF::get_measurement_model()
 {
     // We compare the measurements, z_k, to the current state as a one-to-one mapping
@@ -183,7 +170,6 @@ Eigen::VectorXd EKF::get_measurement_model()
     z_mapping(2) = this->x_k(4); //yaw
     return z_mapping;
 }
-
 
 
 void EKF::update(Eigen::VectorXd z_k)
