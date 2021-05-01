@@ -1,12 +1,4 @@
-#include <SPI.h>
-#include <RH_RF95.h>
-
-#define RFM95_CS 8
-#define RFM95_RST 4
-#define RFM95_INT 3
-
-#define RF95_FREQ 915.0
-#define LED 12
+#include <shared.h>
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 

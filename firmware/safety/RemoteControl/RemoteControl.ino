@@ -1,14 +1,4 @@
-#include <SPI.h>
-#include <RH_RF95.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_PCD8544.h>
-
-#define RFM95_CS 8
-#define RFM95_RST 4
-#define RFM95_INT 3
-
-#define STOP_PIN 9
-#define RF95_FREQ 915.0
+#include <shared.h>
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 Adafruit_PCD8544 display = Adafruit_PCD8544(5, 6, 10, 11, 12);
