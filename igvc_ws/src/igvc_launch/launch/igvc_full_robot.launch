@@ -10,7 +10,6 @@
 
     <!-- Mapping -->
     <node name="igvc_slam_node" pkg="igvc_slam" type="igvc_slam_node.py" output="screen"/>
-    <include file="$(find igvc_slam)/launch/igvc_lidar.launch"/>
-    <include file="$(find igvc_slam)/launch/igvc_mapping.launch"/>
+    <include file="$(find igvc_vision)/launch/igvc_lidar.launch"/>
 
 </launch>

@@ -45,7 +45,9 @@ class VelocityCANReadThread(threading.Thread):
 
                 velPkt = velocity()
                 velPkt.leftVel = left_speed / 127 * max_speed / 10
-                velPkt.leftVel = right_speed / 127 * max_speed / 10
+                velPkt.rightVel = right_speed / 127 * max_speed / 10
+
+                print(f"Received {velPkt.leftVel} {velPkt.rightVel}")
 
                 self.publisher.publish(velPkt)
 
@@ -87,11 +89,13 @@ def motors_out(data):
     left_speed = int(data.left / MAX_SPEED * 127)
     right_speed = int(data.right / MAX_SPEED * 127)
 
-    packed_data = pack('bbB', left_speed, right_speed, int(MAX_SPEED * 10))
+    packed_data = struct.pack('bbB', left_speed, right_speed, int(MAX_SPEED * 10))
 
     can_msg = can.Message(arbitration_id=CAN_SEND_VELOCITY_ID, data=packed_data)
 
     cans["motor"].send(can_msg)
+
+    print(f"Sent {data.left} {data.right}")
 
 
 # Initialize the serial node
@@ -103,7 +107,7 @@ def init_serial_node():
 
     # Setup motor serial and subscriber
     # motor_serial = serials["motor"] = serial.Serial(port = '/dev/igvc-nucleo-120', baudrate = 115200)
-    motor_can = cans["motor"] = can.interface.ThreadSafeBus(bustype='slcan', channel='/dev/igvc-can-835', bitrate=100000)
+    motor_can = cans["motor"] = can.ThreadSafeBus(bustype='slcan', channel='/dev/igvc-can-835', bitrate=100000)
     rospy.Subscriber('/igvc/motors_raw', motors, motors_out)
     
     motor_response_thread = VelocityCANReadThread(can_obj = cans["motor"], topic = '/igvc/velocity')
@@ -120,7 +124,7 @@ def init_serial_node():
 
     # Close the serial ports when program ends
     print("Closing threads")
-    motor_serial.close()
+    motor_can.close()
     #gps_serial.close()
 
 if __name__ == '__main__':

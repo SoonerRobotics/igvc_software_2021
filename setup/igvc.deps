@@ -2,7 +2,6 @@ repositories:
     ../igvc_ws/src/deps/ydlidar_ros:
         type: git
         url: https://github.com/YDLIDAR/ydlidar_ros
-        version: f51e5e37368422d10df303a74952dc31de162549
     ../igvc_ws/src/deps/cv_camera:
         type: git
         url: https://github.com/OTL/cv_camera.git
