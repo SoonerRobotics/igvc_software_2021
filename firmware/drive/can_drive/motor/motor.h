@@ -66,9 +66,9 @@ class IGVCMotor {
         }
 
         void brake(){
-                motorA->write(0);
-                motorB->write(0);
-                pwmPin->write(0.0f);
+            motorA->write(0);
+            motorB->write(0);
+            pwmPin->write(0.0f);
         }
         
         // Poll to update PID
