@@ -14,7 +14,7 @@ from path_planner.mt_dstar_lite import mt_dstar_lite
 from utilities.dstar_viewer import draw_dstar, setup_pyplot
 
 SHOW_PLOTS = True
-USE_SIM_TRUTH = True
+USE_SIM_TRUTH = False
 
 global_path_pub = rospy.Publisher("/igvc/global_path", Path, queue_size=1)
 

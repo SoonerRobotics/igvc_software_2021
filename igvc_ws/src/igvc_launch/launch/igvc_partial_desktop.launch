@@ -1,0 +1,11 @@
+<launch>
+    <!-- EKF -->
+    <include file="$(find igvc_ekf)/launch/igvc_ekf.launch" />
+
+    <!-- Run moving target D*lite and the path follower-->
+    <include file="$(find igvc_nav)/launch/igvc_path_planner.launch" />
+
+    <!-- Mapping -->
+    <node name="igvc_slam_node" pkg="igvc_slam" type="igvc_slam_node.py" output="screen"/>
+
+</launch>

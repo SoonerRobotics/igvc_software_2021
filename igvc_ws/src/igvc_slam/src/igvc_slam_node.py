@@ -8,7 +8,7 @@ from nav_msgs.msg import OccupancyGrid, MapMetaData
 from std_msgs.msg import Header
 
 # Configuration
-wait_for_vision = True
+wait_for_vision = False
 
 # Publishers
 config_pub = rospy.Publisher("/igvc_slam/local_config_space", OccupancyGrid, queue_size=1)
@@ -56,7 +56,7 @@ def lidar_callback(data):
                         if 0 <= (x + x_i) < 200 and 0 <= (y + y_i) < 200 and dist <= 9 and lidar_hidden_layer[index] <= 100:
                             # obstacle expansion
                             lidar_hidden_layer[index] = 100
-                        elif 0 <= (x + x_i) < 200 and 0 <= (y + y_i) < 200 and dist <= 64 and lidar_hidden_layer[index] <= dist * (-100/55) + (1280/11):
+                        elif 0 <= (x + x_i) < 200 and 0 <= (y + y_i) < 200 and dist <= 49 and lidar_hidden_layer[index] <= dist * (-100/55) + (1280/11):
                             # linearly decay
                             lidar_hidden_layer[index] = int(dist * (-100/55) + (1280/11))
 
