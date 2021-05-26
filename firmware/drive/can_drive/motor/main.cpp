@@ -1,5 +1,6 @@
 #include "mbed.h"
 #include "motor.h"
+#include <ratio>
 
 
 
@@ -27,6 +28,7 @@ IGVCMotor motorRight(&motorRightA, &motorRightB, PB_1); //init  right motor
 Ticker ticker;
 Ticker comms;
 
+bool is_stopped = true;
 
 void updateLeft() {
     motorLeft.pulse(encoderLeftA.read(), encoderLeftB.read());
@@ -41,11 +43,25 @@ void tick(void) {
     motorRight.update();
 }
 
+void tune_p(){
+
+
+}
+void tune_i(){
+
+
+}
+void tune_d(){
+
+
+}
+
 struct char_speed{
     signed char left;
     signed char right;
     unsigned char speed;
 };
+
 
 
 
@@ -59,7 +75,8 @@ int main()
     motorLeftB = 0;
 
     // create poll
-    ticker.attach(tick, 10000us);
+    std::chrono::microseconds update_period_microseconds((long long)(1000000/MOTOR_UPDATE_RATE));
+    ticker.attach(tick, update_period_microseconds);
     
     // attach all interrupts
     encoderLeftA.rise(&updateLeft);
@@ -94,9 +111,10 @@ int main()
     motorLeft = 0.0f;
     motorRight = 0.0f;
 
+    
+
     while(1) {
             
-    
 
 
     left_speed = motorLeft.getSpeedEstimate() * 128 / 5.2;
@@ -107,7 +125,10 @@ int main()
 
     // Reads the next message in queue in the can mailbox. 
     if(can1.read(msg)){
+       
+       
        // This means that we need to hit the nuclear button, and the robot needs to shut down immediately. 
+       
        if(msg.id == 0){
            motorLeft = 0.0f;
            motorRight = 0.0f;
@@ -120,20 +141,24 @@ int main()
            motorRight.tuneI(0.0f);
            motorRight.tuneD(0.0f);
 
+          ticker.detach();
+
+          motorLeft.brake();
+          motorRight.brake();  
+
            while(true); //creates infinite loop that requires a reset to fix. 
            return -1;
        }
        if(msg.id == 1){
            motorLeft = 0.0f;
            motorRight = 0.0f;
-           bool stopped = true;
-           while(stopped){
-               can1.read(msg);
-               if(msg.id == 2) stopped = false;
-           }
+           is_stopped = true;
+       }
+       if(msg.id == 9){
+           is_stopped = false;
        }
        // This checks to see if the msg id is 10 which is the message that controls the speed of the motors.
-       if(msg.id == 10){
+       if(msg.id == 10 && !is_stopped){
         //sets the char array for speed control.
         input = *(struct char_speed*) msg.data;
         motorLeft = input.left * input.speed / 10.0 / 128.0;
@@ -151,7 +176,6 @@ int main()
                motorLeft.tuneP(tune_float);
                motorRight.tuneP(tune_float);
            } // both
-           else{}
        }
        // This checks to see if the msg id is 101 which is the message that tunes the I of the PID.
        else if(msg.id == 101){

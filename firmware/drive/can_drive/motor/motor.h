@@ -4,8 +4,8 @@
 #define MOTOR_UPDATE_RATE 80 // Frequency that motor PID is updated (Hz)
 #define MAX_SPEED 2.2f // (m/s)
 #define PULSES_PER_REV 2400 // (revs)
-#define LINEAR_PER_REV 0.254f // Wheel radius (m)
-#define MILLIS_TO_FULL 90 // Milliseconds to go from 0 output speed to 1
+#define LINEAR_PER_REV 0.2054f // Wheel radius (m)
+#define MILLIS_TO_FULL 80 // Milliseconds to go from 0 output speed to 1
 #define LPIIR_DECAY 0.1f // Decay rate of low pass filter on velocity
 
 #define PI 3.14159265f
@@ -22,7 +22,7 @@ class IGVCMotor {
             this->motorB = motorB;
             this->pwmPin = new PwmOut(pwm);
             
-            this->pwmPin->period(1.0/15000.0); // 15 kHz frequency
+            this->pwmPin->period(1.0/500.0); // 15 kHz frequency
             
             this->pulses = 0;
             this->targetSpeed = 0.0f;
@@ -64,6 +64,12 @@ class IGVCMotor {
             
             prevState_ = currState_;
         }
+
+        void brake(){
+                motorA->write(0);
+                motorB->write(0);
+                pwmPin->write(0.0f);
+        }
         
         // Poll to update PID
         void update() {
@@ -72,7 +78,6 @@ class IGVCMotor {
             
             float output = this->updatePID(this->targetSpeed, this->speedEstimate);
             curOutput += output;
-            curOutput = clamp(curOutput, -.6, .6);
 
             //printf("%f,%f,%f\n\r", this->targetSpeed, this->pulses / (float)PULSES_PER_REV * 2.0 * PI * LINEAR_PER_REV * MOTOR_UPDATE_RATE, curOutput);
             
@@ -85,11 +90,11 @@ class IGVCMotor {
             } else if (curOutput > 0.0f) { // forward
                 motorA->write(0);
                 motorB->write(1);
-                pwmPin->write(0.05f + curOutput * 0.95f);
+                pwmPin->write(0.05f + curOutput * 0.30f);
             } else { // reverse
                 motorA->write(1);
                 motorB->write(0);
-                pwmPin->write(0.05f + (-curOutput) * 0.95f);
+                pwmPin->write(0.05f + (-curOutput) * 0.30f); // curOutput is negative so it subtracts
             }  
         }
         
