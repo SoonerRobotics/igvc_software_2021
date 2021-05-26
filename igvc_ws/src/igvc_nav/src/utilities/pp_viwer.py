@@ -9,8 +9,8 @@ def setup_pyplot():
 def draw_pp(agent_pos, lookahead_pos, waypoints, xlims=[-10,10], ylims=[-10,10], fig_num=1):
     plt.figure(fig_num)
     plt.clf()
-    plt.xlim(xlims)
-    plt.ylim(ylims)
+    plt.xlim([agent_pos[0] + xlims[0], agent_pos[0] + xlims[1]])
+    plt.ylim([agent_pos[1] + ylims[0], agent_pos[1] + ylims[1]])
 
     if waypoints:
         for point in waypoints:

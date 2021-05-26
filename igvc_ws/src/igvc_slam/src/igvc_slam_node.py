@@ -7,6 +7,9 @@ import rospy
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from std_msgs.msg import Header
 
+# Configuration
+wait_for_vision = True
+
 # Publishers
 config_pub = rospy.Publisher("/igvc_slam/local_config_space", OccupancyGrid, queue_size=1)
 
@@ -29,9 +32,12 @@ def lidar_callback(data):
     # Reset the hidden layer
     lidar_hidden_layer = [0] * (200 * 200)
 
-    cap_last_vision = last_vision
-    pog = [x+y for x,y in zip(data.data, cap_last_vision)]
-    data.data = pog
+    if last_vision is not None:
+        cap_last_vision = last_vision
+        pog = [x+y for x,y in zip(data.data, cap_last_vision)]
+        data.data = pog
+    elif wait_for_vision:
+        return
 
     # HACK: eventually set this to be based on the map size and stuff
     metadata = MapMetaData(map_load_time = data.info.map_load_time, resolution=data.info.resolution,
@@ -89,7 +95,7 @@ def igvc_slam_node():
     vision_sub = rospy.Subscriber("/igvc/lane_map", OccupancyGrid, lanes_camera_callback, queue_size=10)
 
     # Make a timer to publish configuration spaces periodically
-    timer = rospy.Timer(rospy.Duration(secs=0.2), config_space_callback, oneshot=False)
+    timer = rospy.Timer(rospy.Duration(secs=0.4), config_space_callback, oneshot=False)
 
     # Wait for topic updates
     rospy.spin()

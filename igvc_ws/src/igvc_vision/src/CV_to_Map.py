@@ -124,7 +124,7 @@ def grass_filter(og_image):
 def camera_callback(data):
     global img_num
     img_num += 1
-    if img_num % 5 != 0:
+    if img_num % 8 != 0:
         return
     start_time = time.time()
     image = bridge.compressed_imgmsg_to_cv2(data, desired_encoding="passthrough")
@@ -160,13 +160,13 @@ def camera_callback(data):
     perpsective_crop = transform.trim_top_border(cropped_image)
     perspective_warp = transform.convert_to_flat(perpsective_crop)
 
-    # pkt = bridge.cv2_to_imgmsg(perspective_warp)
-    # preview_pub.publish(pkt)
+    pkt = bridge.cv2_to_imgmsg(perspective_warp)
+    preview_pub.publish(pkt)
 
     # publishes to the node
     end_time = time.time()
     numpy_to_occupancyGrid(perspective_warp)
-    print(f"CV time: {(end_time - start_time) * 1000:02.02f}ms")
+    # print(f"CV time: {(end_time - start_time) * 1000:02.02f}ms")
 
 
 # takes in an image and a list of points (vertices) to crop the image
@@ -209,7 +209,7 @@ def numpy_to_occupancyGrid(data_map):
 
     msg = OccupancyGrid(header=header, info=map_info, data=flattened)
     image_pub.publish(msg)
-    print(f"pub time: {(end_time - start_time) * 1000:02.02f}ms")
+    # print(f"pub time: {(end_time - start_time) * 1000:02.02f}ms")
 
 # created my own helper function to round up numbers
 def round_up(n, decimals):
