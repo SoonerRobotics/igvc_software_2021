@@ -251,7 +251,7 @@ int main(int argc, char** argv)
     x.resize(8);
     u.resize(2);
     //x << degreesToRadians(35.194881), degreesToRadians(-97.438621), degreesToRadians(0), x_coord, y_coord, degreesToRadians(0), 0, 0, 0, 0, 0;
-    x << x_coord, 0, y_coord, 0, 0, 0, 0, 0
+    x << x_coord, 0, y_coord, 0, 0, 0, 0, 0;
     u << 0, 0;
 
     // Initialize the EKF

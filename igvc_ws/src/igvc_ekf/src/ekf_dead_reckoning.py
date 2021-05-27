@@ -1,14 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
-from igvc_msgs.msg import Gps, velocity, motors, EKFState
+from igvc_msgs.msg import gps, velocity, motors, EKFState
 from sensor_msgs.msg import Imu
 from tf import transformations
 from math import sin, cos
 import numpy as np
 
 ## Robot Characteristics
-WHEEL_RADIUS = 0.4 #TODO change to 10 inches in meters
+WHEEL_RADIUS = 0.2 #TODO change to 10 inches in meters
 WHEELBASE_LEN = 0.4 #TODO make correct
 
 ## Constants
@@ -33,7 +33,7 @@ F_trans = None
 P = None # current covariance
 P_next = None # prediction for next
 Z = None # measurements
-Z_buffer = [0,0,0,0] # holds measurements as they come in (outside the measure stage)
+Z_buffer = [0,0,0,0,0,0,0,0] # holds measurements as they come in (outside the measure stage)
 H = None # observation matrix (dynamic model)
 H_trans = None
 Q = None # process noise
@@ -81,7 +81,11 @@ def initialize():
         [0,0,0,0,1,0,0,0],
         [0,0,0,0,0,1,0,0],
         [0,0,0,0,0,0,1,0],
-        [0,0,0,0,0,0,0,1]])
+        [0,0,0,0,0,0,0,1],
+        [0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0]])
     H_trans = np.transpose(H)
 
     ## Initialize the covariance matrix with temporary values for the useful entries
@@ -103,17 +107,17 @@ def initialize():
 def predict():
     global X_next, P_next, F, F_trans
     ## Update the state transition matrix, F and F_trans
-    cos_phi = cos(X[0][4])
-    sin_phi = sin(X[0][4])
-    F[1][6] = 0.5*WHEEL_RADIUS*cos_phi
-    F[1][7] = 0.5*WHEEL_RADIUS*cos_phi
-    F[3][6] = 0.5*WHEEL_RADIUS*sin_phi
-    F[3][7] = 0.5*WHEEL_RADIUS*sin_phi
+    cos_phi = cos(X[4])
+    sin_phi = sin(X[4])
+    F[1,6] = 0.5*WHEEL_RADIUS*cos_phi
+    F[1,7] = 0.5*WHEEL_RADIUS*cos_phi
+    F[3,6] = 0.5*WHEEL_RADIUS*sin_phi
+    F[3,7] = 0.5*WHEEL_RADIUS*sin_phi
     # update transpose entries too
-    F_trans[6][1] = 0.5*WHEEL_RADIUS*cos_phi
-    F_trans[7][1] = 0.5*WHEEL_RADIUS*cos_phi
-    F_trans[6][3] = 0.5*WHEEL_RADIUS*sin_phi
-    F_trans[7][3] = 0.5*WHEEL_RADIUS*sin_phi
+    F_trans[6,1] = 0.5*WHEEL_RADIUS*cos_phi
+    F_trans[7,1] = 0.5*WHEEL_RADIUS*cos_phi
+    F_trans[6,3] = 0.5*WHEEL_RADIUS*sin_phi
+    F_trans[7,3] = 0.5*WHEEL_RADIUS*sin_phi
 
     ## Calculate predicted state for next iteration using dynamic model
     # state extrapolation: X(n+1) = F*X(n) + w (ignore process noise)
@@ -129,7 +133,7 @@ def measure():
     # would update R, but we assume it's constant
 
     ## Load measured values from the buffer
-    Z = np.transpose(np.matrix([Z_buffer[0],Z_buffer[1],Z_buffer[2],Z_buffer[3],Z_buffer[4]]))
+    Z = np.transpose(np.matrix([Z_buffer[0],Z_buffer[1],Z_buffer[2],Z_buffer[3],Z_buffer[4],Z_buffer[5],Z_buffer[6],Z_buffer[7]]))
 
 def update():
     global K, X, P
@@ -137,7 +141,7 @@ def update():
     # compute innovation: S = H*P*H^T + R
     S = np.matmul(np.matmul(H,P),H_trans) + R
     # optimal kalman gain: K = P*H^T*S^-1
-    S_inv = np.linalg.inv(S)
+    S_inv = np.linalg.pinv(S)
     K = np.matmul(np.matmul(P,H_trans),S_inv)
 
     ## Estimate the current state using the state update equation
@@ -159,14 +163,14 @@ def timer_callback(event):
         update()
         ## Publish the state for the robot to use.
         state_msg = EKFState()
-        state_msg.x = X[0][0]
-        state_msg.x_velocity = X[0][1]
-        state_msg.y = X[0][2]
-        state_msg.y_velocity = X[0][3]
-        state_msg.yaw = X[0][4]
-        state_msg.yaw_rate = X[0][5]
-        state_msg.left_velocity = X[0][6]
-        state_msg.right_velocity = X[0][7]
+        state_msg.x = X[0]
+        state_msg.x_velocity = X[1]
+        state_msg.y = X[2]
+        state_msg.y_velocity = X[3]
+        state_msg.yaw = X[4]
+        state_msg.yaw_rate = X[5]
+        state_msg.left_velocity = X[6]
+        state_msg.right_velocity = X[7]
         state_pub.publish(state_msg)
 
 # ## print state vector to the console in a readable format
