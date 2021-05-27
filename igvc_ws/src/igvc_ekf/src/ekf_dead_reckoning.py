@@ -38,7 +38,7 @@ F_trans = None
 P = None # current covariance
 P_next = None # prediction for next
 Z = None # measurements
-Z_buffer = [0,0,0,0,0,0,0,0] # holds measurements as they come in (outside the measure stage)
+Z_buffer = [0,0,0,0] # holds measurements as they come in (outside the measure stage)
 H = None # observation matrix (dynamic model)
 H_trans = None
 Q = None # process noise
@@ -134,7 +134,7 @@ def measure():
     # would update R, but we assume it's constant
 
     ## Load measured values from the buffer
-    Z = np.transpose(np.matrix([Z_buffer[0],Z_buffer[1],Z_buffer[2],Z_buffer[3],Z_buffer[4],Z_buffer[5],Z_buffer[6],Z_buffer[7]]))
+    Z = np.transpose(np.matrix([Z_buffer[0],Z_buffer[1],Z_buffer[2],Z_buffer[3]]))
 
 def update():
     global K, X, P
@@ -203,14 +203,14 @@ def meas_vel(vel_msg):
     Z_buffer[2] = vel_msg.leftVel
     Z_buffer[3] = vel_msg.rightVel
 
-def meas_gps(gps_msg):
-    global Z_buffer
-    if gps_msg.hasSignal:
-        Z_buffer[4] = gps_msg.latitude
-        Z_buffer[5] = gps_msg.longitude
-    else:
-        Z_buffer[4] = None
-        Z_buffer[5] = None
+# def meas_gps(gps_msg):
+#     global Z_buffer
+#     if gps_msg.hasSignal:
+#         Z_buffer[4] = gps_msg.latitude
+#         Z_buffer[5] = gps_msg.longitude
+#     else:
+#         Z_buffer[4] = None
+#         Z_buffer[5] = None
 
 def main():
     global state_pub
