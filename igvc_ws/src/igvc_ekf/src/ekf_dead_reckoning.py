@@ -12,7 +12,7 @@ WHEEL_RADIUS = 0.2 #TODO change to 10 inches in meters
 WHEELBASE_LEN = 0.4 #TODO make correct
 
 ## Constants
-I = np.matrix([ # 8D identity matrix
+I_8 = np.matrix([ # 8D identity matrix
     [1,0,0,0,0,0,0,0],
     [0,1,0,0,0,0,0,0],
     [0,0,1,0,0,0,0,0],
@@ -21,6 +21,11 @@ I = np.matrix([ # 8D identity matrix
     [0,0,0,0,0,1,0,0],
     [0,0,0,0,0,0,1,0],
     [0,0,0,0,0,0,0,1]])
+I_4 = np.matrix([ # 4D identity matrix
+    [1,0,0,0],
+    [0,1,0,0],
+    [0,0,1,0],
+    [0,0,0,1]])
 lat_to_m = 110944.33
 lon_to_m = 91058.93
 
@@ -49,8 +54,8 @@ state_pub = None
 def initialize():
     global initialized, Q, R, X, X_next, F, F_trans, Z, H, H_trans, P, P_next
     ## Set uncertainties
-    Q = np.multiply(0.01,I)
-    R = np.multiply(0.01,I)
+    Q = np.multiply(0.01,I_8)
+    R = np.multiply(0.01,I_4)
 
     ## Initialize the state
     # we will track 8 things: (x,xdot,y,ydot,phi,phidot,v_l,v_r)
@@ -81,11 +86,7 @@ def initialize():
         [0,0,0,0,1,0,0,0],
         [0,0,0,0,0,1,0,0],
         [0,0,0,0,0,0,1,0],
-        [0,0,0,0,0,0,0,1],
-        [0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0]])
+        [0,0,0,0,0,0,0,1]])
     H_trans = np.transpose(H)
 
     ## Initialize the covariance matrix with temporary values for the useful entries
@@ -138,20 +139,20 @@ def measure():
 def update():
     global K, X, P
     ## Calculate kalman gain
-    # compute innovation: S = H*P*H^T + R
-    S = np.matmul(np.matmul(H,P),H_trans) + R
+    # compute innovation covariance: S = H*P*H^T + R
+    S = np.matmul(np.matmul(H,P),H_trans) + R #4x4 = 4x8 * 8x8 * 8x4 + 4x4
     # optimal kalman gain: K = P*H^T*S^-1
-    S_inv = np.linalg.pinv(S)
-    K = np.matmul(np.matmul(P,H_trans),S_inv)
+    S_inv = np.linalg.pinv(S) #4x4
+    K = np.matmul(np.matmul(P,H_trans),S_inv) #8x4 = 8x8 * 8x4 * 4x4
 
     ## Estimate the current state using the state update equation
     # state update: X(n+1) = X(n) + K*(Z-H*X(n))
-    X = X_next + np.matmul(K,(Z-np.matmul(H,X_next)))
+    X = X_next + np.matmul(K,(Z-np.matmul(H,X_next))) #8x1 = 8x1 + 8x4 * (4x1 - 4x8 * 8x1)
     
     ## Update the current estimate uncertainty
     # covariance update: P = (I-K*H)*P*(I-K*H)^T + K*R*K^T
     # or P = (I-K*H)*P (simple version)
-    P = np.matmul((I-np.matmul(K,H)),P_next)
+    P = np.matmul((I_8-np.matmul(K,H)),P_next) #8x8 = (8x8 - 8x4 * 4x8) * 8x8
 
 ## Run the KF
 def timer_callback(event):
@@ -224,7 +225,7 @@ def main():
     #rospy.Subscriber("/igvc/motors_raw", motors, update_control_signal, queue_size=1)
 
     ## Publish the KF state
-    state_pub = rospy.Publisher("/kf/state", EKFState, queue_size=1)
+    state_pub = rospy.Publisher("/igvc/state", EKFState, queue_size=1)
     
     # create timer with a period of 0.1 (10 Hz)
     rospy.Timer(rospy.Duration(dt), timer_callback)
