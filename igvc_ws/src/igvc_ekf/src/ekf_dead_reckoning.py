@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
 import rospy
-from igvc_msgs.msg import gps, velocity, motors, EKFState
+from igvc_msgs.msg import gps, velocity, motors, EKFState, imuodom
 from sensor_msgs.msg import Imu
 from tf import transformations
 from math import sin, cos
 import numpy as np
 
+np.set_printoptions(precision=4)
+
 ## Robot Characteristics
-WHEEL_RADIUS = 0.254
-WHEELBASE_LEN = 0.635 # TODO verify this
+WHEEL_RADIUS = 0.127
+WHEELBASE_LEN = 0.76 # TODO verify this
 
 ## Constants
 I_8 = np.matrix([ # 8D identity matrix
@@ -129,7 +131,7 @@ def predict():
     ## Calculate predicted state for next iteration using dynamic model
     # state extrapolation: X(n+1) = F*X(n) + w (ignore process noise)
     X_next = np.matmul(F,X)
-    print("Prediction:\n", X_next)
+    #print("Prediction:\n", X_next)
 
     ## Extrapolate the estimate uncertainty
     # covariance extrapolation: P(n+1) = F*P(n)*F^T + Q
@@ -142,30 +144,30 @@ def measure():
 
     ## Load measured values from the buffer
     Z = np.transpose(np.matrix([Z_buffer[0],Z_buffer[1],Z_buffer[2],Z_buffer[3]]))
-    print("Measurement:\n", Z)
+    #print("Measurement:\n", Z)
 
 def update():
     global K, X, P
     ## Calculate kalman gain
     # compute innovation covariance: S = H*P*H^T + R
     S = np.matmul(np.matmul(H,P),H_trans) + R #4x4 = 4x8 * 8x8 * 8x4 + 4x4
-    print("S:\n", S)
+    #print("S:\n", S)
     # optimal kalman gain: K = P*H^T*S^-1
     S_inv = np.linalg.pinv(S) #4x4
     K = np.multiply(np.matmul(np.matmul(P,H_trans),S_inv), H_trans) #8x4 = 8x8 * 8x4 * 4x4
-    print("Kalman Gain:\n", K)
+    #print("Kalman Gain:\n", K)
 
     ## Estimate the current state using the state update equation
     # state update: X(n+1) = X(n) + K*(Z-H*X(n))
     X = X_next + np.matmul(K,(Z-np.matmul(H,X_next))) #8x1 = 8x1 + 8x4 * (4x1 - 4x8 * 8x1)
-    print("State:\n", X)
+    #print("State:\n", X)
     
     ## Update the current estimate uncertainty
     # covariance update: P = (I-K*H)*P*(I-K*H)^T + K*R*K^T
     # or P = (I-K*H)*P (simple version)
     P = np.matmul((I_8-np.matmul(K,H)),P_next) #8x8 = (8x8 - 8x4 * 4x8) * 8x8
     #P = np.matmul(np.matmul((I_8-np.matmul(K,H)),P_next),np.transpose(I_8-np.matmul(K,H))) + np.matmul(np.matmul(K,R),np.transpose(K))
-    print("Covariance:\n", P)
+    #print("Covariance:\n", P)
 
 ## Run the KF
 def timer_callback(event):
@@ -206,7 +208,10 @@ def meas_imu(imu_msg):
         orientation.y,
         orientation.z,
         orientation.w)
-    yaw_rads = transformations.euler_from_quaternion(quaternion)[2] #TODO check sign
+    # do bad stuff to make the simulator work
+    bad_quat = [-quaternion[3], quaternion[1], -quaternion[2], quaternion[0]]
+    #print(transformations.euler_from_quaternion(bad_quat))
+    yaw_rads = transformations.euler_from_quaternion(bad_quat)[2] #TODO check sign #yaw should be 2 but hmmm
     Z_buffer[0] = yaw_rads
     yaw_rate = -imu_msg.angular_velocity.z #TODO check sign
     Z_buffer[1] = yaw_rate
