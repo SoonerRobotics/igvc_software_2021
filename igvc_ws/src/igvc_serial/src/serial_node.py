@@ -86,6 +86,10 @@ class GPSSerialReadThread(threading.Thread):
 
 # Constructs motor message from given data and sends to serial
 def motors_out(data):
+
+    # Soon to be firmware corrections
+    data.right = -data.right
+
     left_speed = int(data.left / MAX_SPEED * 127)
     right_speed = int(data.right / MAX_SPEED * 127)
 
