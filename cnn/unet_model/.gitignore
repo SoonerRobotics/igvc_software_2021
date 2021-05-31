@@ -1,0 +1,8 @@
+__pycache__/
+results/
+input/
+example/
+venv/
+
+*.mp4
+*.avi
