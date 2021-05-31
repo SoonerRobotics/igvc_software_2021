@@ -233,7 +233,7 @@ def meas_vel(vel_msg):
 def main():
     global state_pub
     # initalize the node in ROS
-    rospy.init_node('kf_node')
+    rospy.init_node('ekf_dead_reckoning')
 
     ## Subscribe to Sensor Values
     rospy.Subscriber("/igvc/imu", Imu, meas_imu, queue_size=1)
