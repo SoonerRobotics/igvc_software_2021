@@ -231,7 +231,7 @@ def mt_dstar_node():
     if USE_SIM_TRUTH:
         rospy.Subscriber("/sim/true_pose", Pose, true_pose_callback)
     else:
-        rospy.Subscriber("/igvc_ekf/filter_output", EKFState, ekf_callback)
+        rospy.Subscriber("/igvc/state", EKFState, ekf_callback)
 
     # Make a timer to publish new paths
     timer = rospy.Timer(rospy.Duration(secs=0.3), make_map, oneshot=False)

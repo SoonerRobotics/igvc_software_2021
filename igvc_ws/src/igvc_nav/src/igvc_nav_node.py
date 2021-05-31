@@ -21,7 +21,7 @@ def ekf_update(ekf_state):
     global pos, heading
 
     pos = (ekf_state.x, ekf_state.y)
-    heading = math.degrees(ekf_state.global_heading)
+    heading = math.degrees(ekf_state.yaw)
     if heading < 0:
         heading += 360
     heading = 360 - heading
@@ -107,7 +107,7 @@ def nav():
     if USE_SIM_TRUTH:
         rospy.Subscriber("/sim/true_pose", Pose, true_pose_callback)
     else:
-        rospy.Subscriber("/igvc_ekf/filter_output", EKFState, ekf_update)
+        rospy.Subscriber("/igvc/state", EKFState, ekf_update)
 
     rospy.Subscriber("/igvc/global_path", Path, global_path_update)
 
