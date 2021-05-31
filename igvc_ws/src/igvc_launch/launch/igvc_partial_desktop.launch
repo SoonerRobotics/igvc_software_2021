@@ -1,7 +1,4 @@
 <launch>
-    <!-- Configure the robot -->
-    <include file="$(find igvc_launch)/launch/config/igvc_robot_config.launch" />
-
     <!-- EKF -->
     <include file="$(find igvc_ekf)/launch/igvc_ekf.launch" />
 
@@ -10,6 +7,5 @@
 
     <!-- Mapping -->
     <node name="igvc_slam_node" pkg="igvc_slam" type="igvc_slam_node.py" output="screen"/>
-    <include file="$(find igvc_vision)/launch/igvc_lidar.launch"/>
 
 </launch>

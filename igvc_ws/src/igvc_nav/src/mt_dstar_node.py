@@ -14,7 +14,7 @@ from path_planner.mt_dstar_lite import mt_dstar_lite
 from utilities.dstar_viewer import draw_dstar, setup_pyplot
 
 SHOW_PLOTS = True
-USE_SIM_TRUTH = True
+USE_SIM_TRUTH = False
 
 global_path_pub = rospy.Publisher("/igvc/global_path", Path, queue_size=1)
 
@@ -52,7 +52,7 @@ def true_pose_callback(data):
     curEKF.x = data.position.x
     curEKF.y = data.position.y
     (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([data.orientation.x, data.orientation.y, data.orientation.z, data.orientation.w])
-    curEKF.yaw = yaw
+    curEKF.yaw = roll
 
 def c_space_callback(c_space):
     global cost_map, map_reference, map_init, best_pos
@@ -217,7 +217,7 @@ def mt_dstar_node():
         rospy.Subscriber("/igvc_ekf/filter_output", EKFState, ekf_callback)
 
     # Make a timer to publish new paths
-    timer = rospy.Timer(rospy.Duration(secs=0.5), make_map, oneshot=False)
+    timer = rospy.Timer(rospy.Duration(secs=1), make_map, oneshot=False)
 
     if SHOW_PLOTS:
         setup_pyplot()

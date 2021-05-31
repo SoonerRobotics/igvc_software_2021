@@ -9,8 +9,7 @@ from igvc_msgs.msg import motors, EKFState
 from utilities.pp_viwer import setup_pyplot, draw_pp
 
 SHOW_PLOTS = True
-USE_SIM_TRUTH = True
-WHEEL_RADIUS = 0.104
+USE_SIM_TRUTH = False
 
 pos = None
 heading = None
@@ -38,15 +37,10 @@ def true_pose_callback(data):
     #     yaw = -math.pi - yaw
 
     pos = (data.position.x, data.position.y)
-    heading = math.degrees(yaw)
+    heading = math.degrees(roll)
 
     if heading < 0:
         heading += 360
-
-    heading = 360 - heading
-        
-    heading = (heading + 90) % 360
-
 
 def global_path_update(data):
     points = [x.pose.position for x in data.poses] # Get points from Path
@@ -64,7 +58,7 @@ def timer_callback(event):
     cur_pos = (pos[0], pos[1])
 
     lookahead = None
-    radius = 0.6 # Starting radius
+    radius = 0.5 # Starting radius
 
     while lookahead is None and radius <= 3: # Look until we hit 3 meters max
         lookahead = pp.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
@@ -73,27 +67,36 @@ def timer_callback(event):
     if SHOW_PLOTS:
         draw_pp(cur_pos, lookahead, pp.path)
 
-    if lookahead is not None:
+    if lookahead is not None and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:
         # Get heading to to lookahead from current position
-        heading_to_lookahead = math.degrees(math.atan2(lookahead[0] - cur_pos[0], lookahead[1] - cur_pos[1]))
+        heading_to_lookahead = math.degrees(math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0]))
         if heading_to_lookahead < 0:
             heading_to_lookahead += 360
 
         # Get difference in our heading vs heading to lookahead
         # Normalize error to -1 to 1 scale
-        error = get_angle_diff(heading, heading_to_lookahead)/180
+        error = -get_angle_diff(heading, heading_to_lookahead)/180
+
+        # print(f"am at {heading}, want to go to {heading_to_lookahead}")
 
         # print(f"error is {error}")
 
         # Base forward velocity for both wheels
-        forward_speed = 1.0 * (1 - abs(error))**5
+        forward_speed = 0.6 * (1 - abs(error))**5
 
         # Define wheel linear velocities
         # Add proprtional error for turning.
         # TODO: PID instead of just P
         motor_pkt = motors()
-        motor_pkt.left = (forward_speed - 0.8 * error) / WHEEL_RADIUS
-        motor_pkt.right = (forward_speed + 0.8 * error) / WHEEL_RADIUS
+        motor_pkt.left = (forward_speed - 0.4 * error)
+        motor_pkt.right = (forward_speed + 0.4 * error)
+
+        publy.publish(motor_pkt)
+    else:
+        # We couldn't find a suitable direction to head, stop the robot.
+        motor_pkt = motors()
+        motor_pkt.left = 0
+        motor_pkt.right = 0
 
         publy.publish(motor_pkt)
 
@@ -108,7 +111,7 @@ def nav():
 
     rospy.Subscriber("/igvc/global_path", Path, global_path_update)
 
-    rospy.Timer(rospy.Duration(0.1), timer_callback)
+    rospy.Timer(rospy.Duration(0.05), timer_callback)
 
     if SHOW_PLOTS:
         setup_pyplot()
