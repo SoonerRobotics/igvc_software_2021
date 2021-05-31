@@ -4,7 +4,7 @@ from math import radians, degrees
 import time
 
 from sympy import sin, cos, asin, atan2, sqrt, Matrix, Symbol, eye
-from sympy.abc import theta, phi, lamda, psi, p, x, y, v, a, t, r, l
+from sympy.abc import phi, p, x, y, v, a, t, r, l
 
 class EKF:
 
@@ -40,48 +40,48 @@ class MotionModel:
         x = Symbol("x")
 
         # State variables
-        self.state_vars = ["phi", "lamda", "theta", "x", "y", "psi", "v",  "a"]
-        self.ctrl_vars = ["l", "r"]
+        #self.state_vars = ["phi", "lamda", "theta", "x", "y", "psi", "v",  "a"]
+        #self.ctrl_vars = ["l", "r"]
+        self.state_vars = ["x","x_dot","y","y_dot","phi","phi_dot","l","r"] #l=v_l, r=v_r
 
         # Differential drive approximation
         # Velocity calculations
         v_k = 0.5 * self.wheel_rad * (l + r)
-        x_dot = v_k * cos(psi)
-        y_dot = v_k * sin(psi)
-        psi_dot = (self.wheel_rad / self.L) * (l - r)
+        x_dot = v_k * cos(phi)
+        y_dot = v_k * sin(phi)
+        phi_dot = (self.wheel_rad / self.L) * (l - r)
 
         # Position calculations
         x_k = x + x_dot * t
         y_k = y + y_dot * t
-        psi_k = psi + psi_dot * t
-        theta_k = theta + psi_dot * t
+        #psi_k = psi + psi_dot * t
+        #theta_k = theta + psi_dot * t
+        phi_k = phi + phi_dot * t
 
         # GPS calcs
-        lat = phi + (v * t) * cos(theta) / self.R
-        lon = lamda + (v * t) * sin(theta) / (self.R * cos(phi))
+        #lat = phi + (v * t) * cos(theta) / self.R
+        #lon = lamda + (v * t) * sin(theta) / (self.R * cos(phi))
 
         f = Matrix([
-            lat,
-            lon,
-            theta_k,
             x_k,
+            x_dot,
             y_k,
-            psi_k,
-            v_k,
-            psi_dot,
+            y_dot,
+            phi_k,
+            phi_dot,
             l,
-            r,
-            a
+            r
             ])
 
-        X = Matrix([phi, lamda, theta, x, y, psi, v, p, l, r, a])
+        #X = Matrix([phi, lamda, theta, x, y, psi, v, p, l, r, a])
+        X = Matrix([x,x_dot,y,y_dot,phi,phi_dot,l,r])
 
         # IGVC Fk matrix
         self.model = f
         self.jac_model = f.jacobian(X)
         self.Q = eye(11) * 0.2
 
-        self.csv_data = "lat, lon\n"
+        #self.csv_data = "lat, lon\n"
 
     def run_model(self, last_xk, P, ctrl, dt):
         last_xk_mat = Matrix(last_xk[:11])
@@ -95,7 +95,7 @@ class MotionModel:
         new_state = self.model.subs(input_dict).subs(ctrl_dict)
         P = (F * P * F.T) + self.Q
 
-        self.csv_data += str(degrees(new_state[0])) + "," + str(degrees(new_state[1])) + "\n"
+        #self.csv_data += str(degrees(new_state[0])) + "," + str(degrees(new_state[1])) + "\n"
 
         return (new_state, P)
 

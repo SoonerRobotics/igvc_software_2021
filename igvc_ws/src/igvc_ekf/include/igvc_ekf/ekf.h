@@ -39,7 +39,7 @@ class EKF
         // Prediction functions
         void calculate_dynamics(Eigen::VectorXd u_k, double dt);
         void linear_dynamics(Eigen::VectorXd u_k, double dt);
-        void predict(Eigen::VectorXd u_k, double dt);
+        void predict(Eigen::VectorXd u_k, Eigen::VectorXd z_k, double dt);
 
         // Prediction vars
         Eigen::MatrixXd F_k;        // Jacobian of transfer function
@@ -54,8 +54,8 @@ class EKF
         Eigen::MatrixXd H_k;    // Sensor model
         Eigen::MatrixXd K_k;    // Kalman Gain
         Eigen::MatrixXd R_k;    // Measurement noise
-        Eigen::MatrixXd Sk;     // Innovation Covariance
-        Eigen::VectorXd yk;     // Innovation
+        Eigen::MatrixXd S_k;     // Innovation Covariance
+        Eigen::VectorXd y_k;     // Innovation
 
         // Convergence
         double convergence;
