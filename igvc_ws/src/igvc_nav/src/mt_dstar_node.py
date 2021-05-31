@@ -13,10 +13,11 @@ import numpy as np
 from path_planner.mt_dstar_lite import mt_dstar_lite
 from utilities.dstar_viewer import draw_dstar, setup_pyplot
 
-SHOW_PLOTS = True
+SHOW_PLOTS = False
 USE_SIM_TRUTH = False
 
 global_path_pub = rospy.Publisher("/igvc/global_path", Path, queue_size=1)
+local_path_pub = rospy.Publisher("/igvc/local_path", Path, queue_size=1)
 
 # Moving Target D* Lite
 map_init = False
@@ -143,6 +144,17 @@ def path_point_to_global_pose_stamped(robot_pos, pp0, pp1, header):
 
     return pose_stamped
 
+def path_point_to_local_pose_stamped(pp0, pp1, header):
+    pose_stamped = PoseStamped(header=header)
+    pose_stamped.pose = Pose()
+
+    point = Point()
+    point.x = (pp0 - 100) / 10
+    point.y = (pp1 - 100) / 10
+    pose_stamped.pose.position = point
+
+    return pose_stamped
+
 def make_map(c_space):
     global planner, map_init, path_failed, prev_state, path_seq
 
@@ -188,7 +200,12 @@ def make_map(c_space):
         global_path.poses = [path_point_to_global_pose_stamped(robot_pos, path_point[0], path_point[1], header) for path_point in path]
         global_path.poses.reverse() # reverse path becuz its backwards lol
 
+        local_path = Path(header = header)
+        local_path.poses = [path_point_to_local_pose_stamped(path_point[0], path_point[1], header) for path_point in path]
+        local_path.poses.reverse() # reverse path becuz its backwards lol
+
         global_path_pub.publish(global_path)
+        local_path_pub.publish(local_path)
 
     else:
         # Set the path failed flag so we can fully replan
@@ -217,7 +234,7 @@ def mt_dstar_node():
         rospy.Subscriber("/igvc_ekf/filter_output", EKFState, ekf_callback)
 
     # Make a timer to publish new paths
-    timer = rospy.Timer(rospy.Duration(secs=1), make_map, oneshot=False)
+    timer = rospy.Timer(rospy.Duration(secs=0.3), make_map, oneshot=False)
 
     if SHOW_PLOTS:
         setup_pyplot()

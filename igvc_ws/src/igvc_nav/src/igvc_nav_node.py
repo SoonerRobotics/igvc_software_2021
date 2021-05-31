@@ -8,7 +8,7 @@ from nav_msgs.msg import Path, Odometry
 from igvc_msgs.msg import motors, EKFState
 from utilities.pp_viwer import setup_pyplot, draw_pp
 
-SHOW_PLOTS = True
+SHOW_PLOTS = False
 USE_SIM_TRUTH = False
 
 pos = None
