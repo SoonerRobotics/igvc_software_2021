@@ -1,9 +1,3 @@
 <launch>
-    <!-- Get odometry data from the EKF and publish using custom transform -->
-    <node pkg="igvc_transforms" type="igvc_odom_tf_node" name="igvc_odometry_tf_pub" output="screen" />
 
-    <!-- Interact with the ros navigation stack through tf publisher and the cmd_vel driver -->
-    <node pkg="igvc_transforms" type="igvc_unity_tf_node" name="igvc_unity_tf_pub" output="screen" />
-    <node pkg="igvc_transforms" type="igvc_laser_tf_node" name="igvc_laser_tf_pub" output="screen" />
-    <node pkg="igvc_ros_navigation" type="igvc_motor_driver.py" name="igvc_motor_driver_node" output="screen" />
 </launch>

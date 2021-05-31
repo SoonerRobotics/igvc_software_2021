@@ -7,6 +7,5 @@
     <!-- <node pkg="igvc_ekf" type="ekf_plotter.py" name="ekf_plotter" output="screen" /> -->
 
     <!-- python dead reckoning node -->
-    <node pkg="igvc_ekf" type="ekf_dead_reckoning" name="ekf_dead_reckoning" output="screen" />
-
+    <node name="ekf_dead_reckoning" pkg="igvc_ekf" type="ekf_dead_reckoning.py" output="screen"/>
 </launch>

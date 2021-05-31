@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(igvc_vision)
+project(igvc_display)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,11 +8,9 @@ project(igvc_vision)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
-  image_geometry
+  igvc_msgs
   roscpp
   rospy
-  sensor_msgs
   std_msgs
 )
 
@@ -73,7 +71,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   sensor_msgs#   std_msgs
+#   igvc_msgs#   std_msgs
 # )
 
 ################################################
@@ -107,8 +105,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES igvc_vision
-#  CATKIN_DEPENDS cv_bridge image_geometry roscpp rospy sensor_msgs std_msgs
+#  LIBRARIES igvc_display
+#  CATKIN_DEPENDS igvc_msgs roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -125,7 +123,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/igvc_vision.cpp
+#   src/${PROJECT_NAME}/igvc_display.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -136,7 +134,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/igvc_vision_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/igvc_display_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -152,11 +150,6 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-
-# Vision
-add_executable(lidar_node src/lidar_node.cpp)
-target_link_libraries(lidar_node ${catkin_LIBRARIES})
-add_dependencies(lidar_node ${catkin_EXPORTED_TARGETS})
 
 #############
 ## Install ##
@@ -205,7 +198,7 @@ add_dependencies(lidar_node ${catkin_EXPORTED_TARGETS})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_igvc_vision.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_igvc_display.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

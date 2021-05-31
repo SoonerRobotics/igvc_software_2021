@@ -15,8 +15,8 @@
 #define NSEC_TO_SEC (double)(1000.0 * 1000.0 * 1000.0)
 
 // Robot Properties
-#define WHEELBASE_LEN (double)(0.84455) // 33.25 inches (in meters)
-#define WHEEL_RADIUS (double)(0.127)    // 5 inches (in meters)
+#define WHEELBASE_LEN (double)(0.66) // meters
+#define WHEEL_RADIUS (double)(0.104) // meters
 
 
 

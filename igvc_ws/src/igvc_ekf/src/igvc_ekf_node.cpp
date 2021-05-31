@@ -160,7 +160,7 @@ void updateIMU(const sensor_msgs::Imu::ConstPtr& imu_msg)
     tf::Matrix3x3 m(q);
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
-    std::cout << roll << " -- " << pitch << " -- " << yaw << std::endl;
+    // std::cout << roll << " -- " << pitch << " -- " << yaw << std::endl;
 
     // HACK: For some reason, pitch is the yaw from the IMU in the simulator
     double deg_hdg = radiansToDegrees(pitch);
