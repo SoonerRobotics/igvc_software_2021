@@ -30,7 +30,7 @@ class IGVCWindow(QMainWindow):
 
         # Subscribe to necessary topics
         rospy.Subscriber("/igvc_slam/local_config_space", OccupancyGrid, self.c_space_callback, queue_size=1)
-        rospy.Subscriber("/igvc_ekf/filter_output", EKFState, self.ekf_callback)
+        rospy.Subscriber("/igvc/state", EKFState, self.ekf_callback)
         rospy.Subscriber("/igvc/local_path", Path, self.path_callback)
 
         # Setup window
