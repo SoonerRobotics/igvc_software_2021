@@ -3,6 +3,7 @@
 import rospy
 from igvc_msgs.msg import gps, velocity, motors, EKFState, imuodom
 from sensor_msgs.msg import Imu
+from std_msgs.msg import Bool
 from tf import transformations
 from math import sin, cos
 import numpy as np
@@ -48,6 +49,7 @@ Q = None # process noise
 R = None # meas uncertainty
 
 initialized = False # init flag
+mobi_start = False # mobility start/stop flag
 start_gps = None # starting GPS coords
 
 ## Publishers
@@ -197,13 +199,18 @@ def timer_callback(event):
 def meas_gps(gps_msg):
     global Z_buffer, start_gps
     # we're treating this input as a direct measure of x and y
-    if start_gps is None:
-        start_gps = gps()
-        start_gps.latitude = gps_msg.latitude
-        start_gps.longitude = gps_msg.longitude
-    # TODO verify this coordinate system matches up
-    Z_buffer[0] = (gps_msg.latitude - start_gps.latitude) * lat_to_m
-    Z_buffer[1] = (gps_msg.longitude - start_gps.longitude) * lon_to_m
+    if not mobi_start:
+        if start_gps is None:
+            start_gps.latitude = gps_msg.latitude
+            start_gps.longitude = gps_msg.longitude
+        else:
+            # average out the start position to make it more accurate
+            start_gps.latitude = 0.9 * start_gps.latitude + 0.1 * gps_msg.latitude
+            start_gps.longitude = 0.9 * start_gps.longitude + 0.1 * gps_msg.longitude
+    else:
+        # TODO verify this coordinate system matches up
+        Z_buffer[0] = (gps_msg.latitude - start_gps.latitude) * lat_to_m
+        Z_buffer[1] = (gps_msg.longitude - start_gps.longitude) * lon_to_m
 
 def meas_imu(imu_msg):
     global Z_buffer
@@ -227,10 +234,17 @@ def meas_vel(vel_msg):
     Z_buffer[4] = vel_msg.leftVel
     Z_buffer[5] = vel_msg.rightVel
 
+def init_mobi_start(mobi_msg):
+    global mobi_start
+    mobi_start = True
+
 def main():
     global state_pub
     # initalize the node in ROS
     rospy.init_node('ekf_with_gps')
+
+    ## Subscribe to Mobility Start/Stop messages
+    rospy.Subscriber("/igvc/mobstart", Bool, init_mobi_start, queue_size=1)
 
     ## Subscribe to Sensor Values
     rospy.Subscriber("/igvc/gps", gps, meas_gps, queue_size=1)
