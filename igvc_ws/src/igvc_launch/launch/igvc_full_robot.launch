@@ -14,6 +14,7 @@
 
     <!-- Serial and firmware -->
     <include file="$(find igvc_serial)/launch/all_serial.launch"/>
+    <include file="$(find igvc_serial)/launch/imu.launch"/>
 
     <!-- Display -->
     <include file="$(find igvc_display)/launch/robot_display.launch"/>

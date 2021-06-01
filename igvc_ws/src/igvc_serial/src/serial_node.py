@@ -48,8 +48,8 @@ class VelocityCANReadThread(threading.Thread):
                     left_speed, right_speed, max_speed = struct.unpack("bbB", msg.data)
 
                     velPkt = velocity()
-                    velPkt.leftVel = left_speed / 127 * max_speed / 10
-                    velPkt.rightVel = -right_speed / 127 * max_speed / 10
+                    velPkt.leftVel = left_speed / 127 * max_speed / 10 * 2
+                    velPkt.rightVel = -right_speed / 127 * max_speed / 10 * 2
 
                     # print(f"Received {velPkt.leftVel} {velPkt.rightVel}")
 
