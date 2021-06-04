@@ -227,7 +227,7 @@ def meas_imu(imu_msg):
     # do bad stuff to make the simulator work
     # bad_quat = [-quaternion[3], quaternion[1], -quaternion[2], quaternion[0]]
     shit_ass = [f"{x * 180 / 3.1415:4.01f}" for x in transformations.euler_from_quaternion(quaternion)]
-    print(shit_ass)
+    # print(shit_ass)
     yaw_rads = transformations.euler_from_quaternion(quaternion)[1] #TODO check sign #yaw should be 2 but hmmm
     Z_buffer[2] = yaw_rads
     yaw_rate = imu_msg.angular_velocity.y #TODO check sign

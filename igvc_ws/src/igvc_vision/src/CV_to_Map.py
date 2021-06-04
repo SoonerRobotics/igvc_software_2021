@@ -29,6 +29,8 @@ bridge = CvBridge()
 preview_pub = rospy.Publisher("/igvc/preview", Image, queue_size=1)
 image_pub = rospy.Publisher("/igvc/lane_map", OccupancyGrid, queue_size=1)
 
+cam = None
+
 class PerspectiveTransform:
 
     def __init__(self, camera_angle):
@@ -38,12 +40,12 @@ class PerspectiveTransform:
         self.camera_angle = camera_angle
 
         # Ratio of number of pixels between top points of the trapezoid and their nearest vertical border
-        self.horizontal_corner_cut_ratio = 0.4
+        self.horizontal_corner_cut_ratio = 0.2
 
         # Output image dimensions
-        self.output_img_shape_x = 640
-        self.output_img_shape_y = 480
-    
+        self.output_img_shape_x = 1920
+        self.output_img_shape_y = 1080
+ 
     # Equation to calculate how much off the top to trim. Should probably edit this once we have the robot built
     '''
     Calculates how much of the top portion of the image needs to be trimmed
@@ -97,9 +99,9 @@ def grass_filter(og_image):
     result = og_image.copy()
     img = cv2.cvtColor(og_image, cv2.COLOR_BGR2HSV)
     # create a lower bound for a pixel value
-    lower = np.array([0, 0, 200])
+    lower = np.array([0, 0, 250])
     # create an upper bound for a pixel values
-    upper = np.array([179, 77, 255])
+    upper = np.array([255, 10, 255])
     # detects all white pixels wihin the range specified earlier
     mask = cv2.inRange(img, lower, upper)
     result = cv2.bitwise_and(result, result, mask=mask)
@@ -127,7 +129,9 @@ def camera_callback(data):
     if img_num % 8 != 0:
         return
     start_time = time.time()
-    image = bridge.compressed_imgmsg_to_cv2(data, desired_encoding="passthrough")
+
+    yes, image = cam.read()
+    # cv2.imwrite("here_i_am.jpg", image)
 
     # flag for seeing if you're dealing with grassy images or not
     if grass_image:
@@ -157,7 +161,10 @@ def camera_callback(data):
     # crop operation at the end of the cannyed pipeline so cropped edge doesn't get detected
     cropped_image = region_of_interest(gray_image, np.array([region_of_interest_vertices], np.int32))
 
-    perpsective_crop = transform.trim_top_border(cropped_image)
+    blurred = cv2.GaussianBlur(cropped_image, (5,5), 0)
+    blurred[blurred < 240] = 0
+
+    perpsective_crop = transform.trim_top_border(blurred)
     perspective_warp = transform.convert_to_flat(perpsective_crop)
 
     pkt = bridge.cv2_to_imgmsg(perspective_warp)
@@ -221,6 +228,11 @@ if __name__ == '__main__':
     # call pipeline function which will return a data_map which is just a 2d numpy array
     # Need to subscribe to an image node for images data to use
     rospy.init_node('lane_finder', anonymous=True)
-    rospy.Subscriber("/igvc/camera/compressed", CompressedImage, camera_callback)
-    # while true loop
+    # rospy.Subscriber("/cv_camera/image_raw/compressed", CompressedImage, camera_callback)
+    
+    cam = cv2.VideoCapture(0)
+
+    rospy.Timer(rospy.Duration(1.0/20.0), camera_callback)
+
+# while true loop
     rospy.spin()

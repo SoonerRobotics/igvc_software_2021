@@ -8,7 +8,7 @@ from nav_msgs.msg import OccupancyGrid, MapMetaData
 from std_msgs.msg import Header
 
 # Configuration
-wait_for_vision = False
+wait_for_vision = True
 
 # Publishers
 config_pub = rospy.Publisher("/igvc_slam/local_config_space", OccupancyGrid, queue_size=1)
