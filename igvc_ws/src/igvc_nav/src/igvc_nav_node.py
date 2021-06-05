@@ -24,14 +24,16 @@ LON_TO_M = 81972.46
 nml_start = (None, None)
 nml_ramp = (None, None)
 nml_end = (None, None)
+# measured GPS coordinates on the course
+meas_gps = (-42.66809, -83.21637, -42.66814, -83.21637, -42.66832, -83.21638)
 
 def set_start_gps(start_gps):
     global nml_start, nml_ramp, nml_end
     # receive starting GPS position estimated by the EKF node,
     # and set position of known waypoints in meters relative to start.
-    nml_start = ((TODO - start_gps.latitude) * LAT_TO_M, (TODO - start_gps.longitude) * LON_TO_M)
-    nml_ramp = ((TODO - start_gps.latitude) * LAT_TO_M, (TODO - start_gps.longitude) * LON_TO_M)
-    nml_end = ((TODO - start_gps.latitude) * LAT_TO_M, (TODO - start_gps.longitude) * LON_TO_M)
+    nml_start = ((meas_gps[0] - start_gps.latitude) * LAT_TO_M, (meas_gps[1] - start_gps.longitude) * LON_TO_M)
+    nml_ramp = ((meas_gps[2] - start_gps.latitude) * LAT_TO_M, (meas_gps[3] - start_gps.longitude) * LON_TO_M)
+    nml_end = ((meas_gps[4] - start_gps.latitude) * LAT_TO_M, (meas_gps[5] - start_gps.longitude) * LON_TO_M)
 
 def ekf_update(ekf_state):
     global pos, heading
@@ -68,9 +70,9 @@ def get_angle_diff(angle1, angle2):
     return delta
 
 def check_in_nml(cur_pos):
-    # we're in NML if lon is between start and end (which are in a line),
-    # and lat is within 5-10 meters of this line. #TODO verify this, possibly switch them.
-    return cur_pos[1] < nml_start[1] and cur_pos[1] > nml_end[1] and abs(cur_pos[0] - nml_start[0]) < 10
+    # we're in NML if lat is between start and end (which are in a line),
+    # and lon is within 5-10 meters of this line.
+    return cur_pos[0] < nml_start[0] and cur_pos[0] > nml_end[0] and abs(cur_pos[1] - nml_start[1]) < 10
 
 def timer_callback(event):
     if pos is None or heading is None:
@@ -81,10 +83,11 @@ def timer_callback(event):
     # check if we're in No Man's Land
     if check_in_nml(cur_pos):
         # do raw PID to heading to NML end location TODO
-        heading_to_lookahead = math.degrees(math.atan2(nml_end[1] - cur_pos[1], nml_end[0] - cur_pos[0]))
+        heading_to_end = math.degrees(math.atan2(nml_end[1] - cur_pos[1], nml_end[0] - cur_pos[0]))
         # this assumes that reactive obstacle avoidance is happening on the control level,
         # so this commanded heading is the general path to follow, but will be ignored for 
         # small local things like avoiding the obstacles.
+        # TODO make the obstacle avoidance w/ lidar data, perhaps in a different node.
     else:
         # we're on the regular course. do pure pursuit on local path as before.
 
@@ -103,6 +106,21 @@ def timer_callback(event):
             heading_to_lookahead = math.degrees(math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0]))
             if heading_to_lookahead < 0:
                 heading_to_lookahead += 360
+
+            # Get difference in our heading vs heading to lookahead
+            # Normalize error to -1 to 1 scale
+            error = -get_angle_diff(heading, heading_to_lookahead)/180
+            # print(f"am at {heading}, want to go to {heading_to_lookahead}")
+            # print(f"error is {error}")
+
+            # Base forward velocity for both wheels
+            forward_speed = 0.6 * (1 - abs(error))**5
+            # Define wheel linear velocities
+            # Add proprtional error for turning.
+            motor_pkt = motors()
+            motor_pkt.left = (forward_speed - 0.4 * error)
+            motor_pkt.right = (forward_speed + 0.4 * error)
+            publy.publish(motor_pkt)
         else:
             # We couldn't find a suitable direction to head, so stop the robot.
             motor_pkt = motors()
@@ -110,26 +128,6 @@ def timer_callback(event):
             motor_pkt.right = 0
             publy.publish(motor_pkt)
             return
-
-        # Get difference in our heading vs heading to lookahead
-        # Normalize error to -1 to 1 scale
-        error = -get_angle_diff(heading, heading_to_lookahead)/180
-
-        # print(f"am at {heading}, want to go to {heading_to_lookahead}")
-
-        # print(f"error is {error}")
-
-        # Base forward velocity for both wheels
-        forward_speed = 0.6 * (1 - abs(error))**5
-
-        # Define wheel linear velocities
-        # Add proprtional error for turning.
-        # TODO: PID instead of just P
-        motor_pkt = motors()
-        motor_pkt.left = (forward_speed - 0.4 * error)
-        motor_pkt.right = (forward_speed + 0.4 * error)
-
-        publy.publish(motor_pkt)
 
 
 def nav():

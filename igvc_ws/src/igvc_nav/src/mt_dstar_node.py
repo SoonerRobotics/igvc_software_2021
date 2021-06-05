@@ -78,7 +78,7 @@ def c_space_callback(c_space):
             else:
                 temp_cost_map[(y * 200) + x] = 100
 
-    # Breath-first look for good points
+    # Breadth-first look for good points
     # This allows us to find a point within the range of obstacles by not
     # exploring over obstacles.
     frontier = set()
@@ -92,7 +92,7 @@ def c_space_callback(c_space):
             # Cost at a point is sum of
             # - Negative X value (encourage forward)
             # - Positive Y value (discourage left/right)
-            # - Depth (number of breath-first search iterations)
+            # - Depth (number of breadth-first search iterations)
             # - Config space cost
             cost = (pos[0] - 100) + -abs(pos[1] - 100) + depth - temp_cost_map[pos[1] * 200 + pos[0]]
             if cost > best_pos_cost:
