@@ -104,8 +104,8 @@ def motors_out(data):
     # Soon to be firmware corrections
     data.right = -data.right
 
-    left_speed = int(data.left / MAX_SPEED * 127)
-    right_speed = int(data.right / MAX_SPEED * 127)
+    left_speed = int(data.left / 2.0 / MAX_SPEED * 127)
+    right_speed = int(data.right / 2.0 / MAX_SPEED * 127)
 
     packed_data = struct.pack('bbB', left_speed, right_speed, int(MAX_SPEED * 10))
 
