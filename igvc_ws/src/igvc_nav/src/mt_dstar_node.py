@@ -5,7 +5,7 @@ import math
 from std_msgs.msg import String, Header
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Transform, TransformStamped, Vector3
 from nav_msgs.msg import OccupancyGrid, Path, MapMetaData
-from igvc_msgs.msg import motors, EKFState
+from igvc_msgs.msg import motors, EKFState, gps
 from igvc_msgs.srv import EKFService
 import tf
 import copy
@@ -15,6 +15,29 @@ from utilities.dstar_viewer import draw_dstar, setup_pyplot
 
 SHOW_PLOTS = False
 USE_SIM_TRUTH = False
+
+# Coords of Oakland University: 42.6679° N, 83.2082° W
+LAT_TO_M = 111086.33
+LON_TO_M = 81972.46
+# No Man's Land gps coords turned to meters relative to start. (x,y)
+nml_start = (None, None)
+nml_ramp = (None, None)
+nml_end = (None, None)
+# measured GPS coordinates on the course
+meas_gps = (-42.66809, -83.21637, -42.66814, -83.21637, -42.66832, -83.21638)
+
+def set_start_gps(start_gps):
+    global nml_start, nml_ramp, nml_end
+    # receive starting GPS position estimated by the EKF node,
+    # and set position of known waypoints in meters relative to start.
+    nml_start = ((meas_gps[0] - start_gps.latitude) * LAT_TO_M, (meas_gps[1] - start_gps.longitude) * LON_TO_M)
+    nml_ramp = ((meas_gps[2] - start_gps.latitude) * LAT_TO_M, (meas_gps[3] - start_gps.longitude) * LON_TO_M)
+    nml_end = ((meas_gps[4] - start_gps.latitude) * LAT_TO_M, (meas_gps[5] - start_gps.longitude) * LON_TO_M)
+
+def check_in_nml(cur_pos):
+    # we're in NML if lat is between start and end (which are in a line),
+    # and lon is within 5-10 meters of this line.
+    return cur_pos[0] < nml_start[0] and cur_pos[0] > nml_end[0] and abs(cur_pos[1] - nml_start[1]) < 10
 
 global_path_pub = rospy.Publisher("/igvc/global_path", Path, queue_size=1)
 local_path_pub = rospy.Publisher("/igvc/local_path", Path, queue_size=1)
@@ -34,8 +57,8 @@ GRID_SIZE = 0.1      # Map block size in meters
 # Path tracking
 path_seq = 0
 
-# Cost map
-cost_map = None
+# fitness map
+fitness_map = None
 
 # Latest EKF update
 curEKF = EKFState()
@@ -56,19 +79,19 @@ def true_pose_callback(data):
     curEKF.yaw = roll
 
 def c_space_callback(c_space):
-    global cost_map, map_reference, map_init, best_pos
+    global fitness_map, map_reference, map_init, best_pos
 
     if curEKF is None:
         return
 
     grid_data = c_space.data
 
-    # Make a costmap
+    # Make a cost map
     temp_cost_map = [0] * 200 * 200
 
     # Find the best position
     temp_best_pos = (100, 100)
-    best_pos_cost = -1000
+    best_pos_fitness = -1000
 
     # Only look forward for the goal
     for x in range(200):
@@ -89,14 +112,14 @@ def c_space_callback(c_space):
     while depth < 50 and len(frontier) > 0:
         curfrontier = copy.copy(frontier)
         for pos in curfrontier:
-            # Cost at a point is sum of
-            # - Negative X value (encourage forward)
-            # - Positive Y value (discourage left/right)
+            # Fitness at a point is the sum of
+            # - Shifted X value (encourage forward) (100 is highest possible X)
+            # - Negative Y value (discourage left/right)
             # - Depth (number of breadth-first search iterations)
-            # - Config space cost
-            cost = (pos[0] - 100) + -abs(pos[1] - 100) + depth - temp_cost_map[pos[1] * 200 + pos[0]]
-            if cost > best_pos_cost:
-                best_pos_cost = cost
+            # - Config space fitness
+            fitness = (pos[0] - 100) + -abs(pos[1] - 100) + depth - temp_cost_map[pos[1] * 200 + pos[0]]
+            if fitness > best_pos_fitness:
+                best_pos_fitness = fitness
                 temp_best_pos = pos
 
             frontier.remove(pos)
@@ -117,7 +140,7 @@ def c_space_callback(c_space):
         depth += 1
 
     map_reference = (curEKF.x, curEKF.y, curEKF.yaw)
-    cost_map = temp_cost_map
+    fitness_map = temp_cost_map
     best_pos = temp_best_pos
     map_init = False
 
@@ -158,7 +181,7 @@ def path_point_to_local_pose_stamped(pp0, pp1, header):
 def make_map(c_space):
     global planner, map_init, path_failed, prev_state, path_seq
 
-    if cost_map is None or curEKF is None:
+    if fitness_map is None or curEKF is None:
         return
 
     # Reset the path
@@ -172,7 +195,7 @@ def make_map(c_space):
 
     # TODO: Make this not True again lol
     if True:
-        planner.initialize(200, 200, robot_pos, best_pos, cost_map)
+        planner.initialize(200, 200, robot_pos, best_pos, fitness_map)
         path = planner.plan()
         map_init = True
     # Otherwise, replan the path
@@ -186,7 +209,7 @@ def make_map(c_space):
         prev_state = (int(curEKF.x / GRID_SIZE), int(curEKF.y / GRID_SIZE))
 
         # Request the planner replan the path
-        path = planner.replan(robot_pos, best_pos, cost_map) #, map_shift) # TODO: add in shifting
+        path = planner.replan(robot_pos, best_pos, fitness_map) #, map_shift) # TODO: add in shifting
 
     if path is not None:
         header = Header()
@@ -219,7 +242,7 @@ def make_map(c_space):
         # path_pub.publish(path_msg)
 
     if SHOW_PLOTS:
-        draw_dstar(robot_pos, best_pos, cost_map, path, fig_num=2)
+        draw_dstar(robot_pos, best_pos, fitness_map, path, fig_num=2)
 
 
 def mt_dstar_node():
@@ -232,6 +255,9 @@ def mt_dstar_node():
         rospy.Subscriber("/sim/true_pose", Pose, true_pose_callback)
     else:
         rospy.Subscriber("/igvc/state", EKFState, ekf_callback)
+    
+    ## Subscribe to the start GPS position obtained by the EKF
+    rospy.Subscriber("/igvc/start_gps", gps, set_start_gps, queue_size=1)
 
     # Make a timer to publish new paths
     timer = rospy.Timer(rospy.Duration(secs=0.3), make_map, oneshot=False)
