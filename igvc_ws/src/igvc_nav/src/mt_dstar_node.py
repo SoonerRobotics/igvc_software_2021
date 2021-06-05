@@ -25,6 +25,8 @@ nml_ramp = (None, None)
 nml_end = (None, None)
 # measured GPS coordinates on the course
 meas_gps = (-42.66809, -83.21637, -42.66814, -83.21637, -42.66832, -83.21638)
+# scaling factor to emphasize the importance of making forward progress in NML
+fwd_scale = 1
 
 def set_start_gps(start_gps):
     global nml_start, nml_ramp, nml_end
@@ -34,10 +36,14 @@ def set_start_gps(start_gps):
     nml_ramp = ((meas_gps[2] - start_gps.latitude) * LAT_TO_M, (meas_gps[3] - start_gps.longitude) * LON_TO_M)
     nml_end = ((meas_gps[4] - start_gps.latitude) * LAT_TO_M, (meas_gps[5] - start_gps.longitude) * LON_TO_M)
 
-def check_in_nml(cur_pos):
+def check_in_nml(curEKF):
+    global fwd_scale
     # we're in NML if lat is between start and end (which are in a line),
     # and lon is within 5-10 meters of this line.
-    return cur_pos[0] < nml_start[0] and cur_pos[0] > nml_end[0] and abs(cur_pos[1] - nml_start[1]) < 10
+    if curEKF.x < nml_start[0] and curEKF.x > nml_end[0] and abs(curEKF.y - nml_start[1]) < 10:
+        fwd_scale = 3
+    else:
+        fwd_scale = 1
 
 global_path_pub = rospy.Publisher("/igvc/global_path", Path, queue_size=1)
 local_path_pub = rospy.Publisher("/igvc/local_path", Path, queue_size=1)
@@ -69,6 +75,7 @@ best_pos = (0,0)
 def ekf_callback(data):
     global curEKF
     curEKF = data
+    check_in_nml(curEKF)
 
 def true_pose_callback(data):
     global curEKF
@@ -114,10 +121,10 @@ def c_space_callback(c_space):
         for pos in curfrontier:
             # Fitness at a point is the sum of
             # - Shifted X value (encourage forward) (100 is highest possible X)
-            # - Negative Y value (discourage left/right)
+            # - Negative shifted Y value (discourage left/right)
             # - Depth (number of breadth-first search iterations)
             # - Config space fitness
-            fitness = (pos[0] - 100) + -abs(pos[1] - 100) + depth - temp_cost_map[pos[1] * 200 + pos[0]]
+            fitness = fwd_scale * (pos[0] - 100) + -abs(pos[1] - 100) + depth - temp_cost_map[pos[1] * 200 + pos[0]]
             if fitness > best_pos_fitness:
                 best_pos_fitness = fitness
                 temp_best_pos = pos
