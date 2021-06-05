@@ -1,6 +1,4 @@
 Header header
-float64 longitude
-float64 latitude
 float64 x
 float64 x_velocity
 float64 y

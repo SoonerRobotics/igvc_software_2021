@@ -13,6 +13,9 @@ np.set_printoptions(precision=4)
 ## Robot Characteristics
 WHEEL_RADIUS = 0.127
 WHEELBASE_LEN = 0.76 # TODO verify this
+# Coords of Oakland University: 42.6679° N, 83.2082° W
+LAT_TO_M = 111086.33 #linear conversion latitude to meters
+LON_TO_M = 81972.46 #linear conversion longitude to meters
 
 ## Constants
 I_8 = np.matrix([ # 8D identity matrix
@@ -29,9 +32,6 @@ I_4 = np.matrix([ # 4D identity matrix
     [0,1,0,0],
     [0,0,1,0],
     [0,0,0,1]])
-# Coords of Oakland University: 42.6679° N, 83.2082° W
-lat_to_m = 111086.33 #linear conversion latitude to meters
-lon_to_m = 81972.46 #linear conversion longitude to meters
 
 ## Kalman Filter variables
 dt = 0.1 # period in seconds
@@ -54,6 +54,7 @@ start_gps = None # starting GPS coords
 
 ## Publishers
 state_pub = None
+gps_pub = None
 
 ## Kalman Filter functions
 def initialize():
@@ -198,19 +199,22 @@ def timer_callback(event):
 ## Stay in buffer until measure() is run each clock cycle.
 def meas_gps(gps_msg):
     global Z_buffer, start_gps
-    # we're treating this input as a direct measure of x and y
+    # we're treating this input as a direct measure of x and y.
     if not mobi_start:
+        # before mobility start, we are stationary, so we can use
+        # multiple measurements to get a more accurate starting GPS position.
         if start_gps is None:
             start_gps.latitude = gps_msg.latitude
             start_gps.longitude = gps_msg.longitude
         else:
-            # average out the start position to make it more accurate
+            # average out the start position to make it more accurate.
             start_gps.latitude = 0.9 * start_gps.latitude + 0.1 * gps_msg.latitude
             start_gps.longitude = 0.9 * start_gps.longitude + 0.1 * gps_msg.longitude
+            gps_pub.publish(start_gps)
     else:
-        # TODO verify this coordinate system matches up
-        Z_buffer[0] = (gps_msg.latitude - start_gps.latitude) * lat_to_m
-        Z_buffer[1] = (gps_msg.longitude - start_gps.longitude) * lon_to_m
+        # TODO verify this coordinate system matches up.
+        Z_buffer[0] = (gps_msg.latitude - start_gps.latitude) * LAT_TO_M
+        Z_buffer[1] = (gps_msg.longitude - start_gps.longitude) * LON_TO_M
 
 def meas_imu(imu_msg):
     global Z_buffer
@@ -239,7 +243,7 @@ def init_mobi_start(mobi_msg):
     mobi_start = True
 
 def main():
-    global state_pub
+    global state_pub, gps_pub
     # initalize the node in ROS
     rospy.init_node('ekf_with_gps')
 
@@ -255,6 +259,8 @@ def main():
 
     ## Publish the KF state
     state_pub = rospy.Publisher("/igvc/state", EKFState, queue_size=1)
+    ## Publish the starting GPS position to help with localization elsewhere
+    gps_pub = rospy.Publisher("/igvc/start_gps", gps, queue_size=1)
     
     # create timer with a period of 0.1 (10 Hz)
     rospy.Timer(rospy.Duration(dt), timer_callback)
