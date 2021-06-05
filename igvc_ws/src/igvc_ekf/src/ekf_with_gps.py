@@ -36,7 +36,7 @@ lat_to_m = 111086.33 #linear conversion latitude to meters
 lon_to_m = 81972.46 #linear conversion longitude to meters
 
 ## Kalman Filter variables
-dt = 0.05 # period in seconds
+dt = 0.02 # period in seconds
 X = None # current state
 X_next = None # prediction for next
 F = None # state transition matrix (dynamic model)
@@ -64,10 +64,10 @@ def initialize():
     Q = np.multiply(1.5,I_8)
     #R = np.multiply(0.1,I_4)
     R = np.matrix([
-        [100000000,0,0,0,0,0],
-        [0,100000000,0,0,0,0],
-        [0,0,0.4,0,0,0],
-        [0,0,0,0.1,0,0],
+        [1000000000,0,0,0,0,0],
+        [0,1000000000,0,0,0,0],
+        [0,0,10,0,0,0],
+        [0,0,0,10,0,0],
         [0,0,0,0,0.005,0],
         [0,0,0,0,0,0.005]])
 
@@ -184,8 +184,8 @@ def timer_callback(event):
         state_msg.y_velocity = X[3]
         state_msg.yaw = X[4]
         state_msg.yaw_rate = X[5]
-        state_msg.left_velocity = X[6]
-        state_msg.right_velocity = X[7]
+        state_msg.left_velocity = X[6] * WHEEL_RADIUS
+        state_msg.right_velocity = X[7] * WHEEL_RADIUS
         state_pub.publish(state_msg)
 
 # ## print state vector to the console in a readable format
@@ -199,11 +199,14 @@ def timer_callback(event):
 ## Functions to receive sensor readings.
 ## Stay in buffer until measure() is run each clock cycle.
 def meas_gps(gps_msg):
-    global Z_buffer, start_gps
+    global Z_buffer, start_gps, R
     # we're treating this input as a direct measure of x and y
     if gps_msg.hasSignal:
         if not mobi_start:
             if start_gps is None:
+                R[0,0] = 2
+                R[1,1] = 2
+                start_gps = gps()
                 start_gps.latitude = gps_msg.latitude
                 start_gps.longitude = gps_msg.longitude
             else:
@@ -226,11 +229,11 @@ def meas_imu(imu_msg):
         orientation.w)
     # do bad stuff to make the simulator work
     # bad_quat = [-quaternion[3], quaternion[1], -quaternion[2], quaternion[0]]
-    shit_ass = [f"{x * 180 / 3.1415:4.01f}" for x in transformations.euler_from_quaternion(quaternion)]
+    # shit_ass = [f"{x * 180 / 3.1415:4.01f}" for x in transformations.euler_from_quaternion(quaternion)]
     # print(shit_ass)
-    yaw_rads = transformations.euler_from_quaternion(quaternion)[1] #TODO check sign #yaw should be 2 but hmmm
+    yaw_rads = transformations.euler_from_quaternion(quaternion)[2] #TODO check sign #yaw should be 2 but hmmm
     Z_buffer[2] = yaw_rads
-    yaw_rate = imu_msg.angular_velocity.y #TODO check sign
+    yaw_rate = imu_msg.angular_velocity.z #TODO check sign
     Z_buffer[3] = yaw_rate
     
 def meas_vel(vel_msg):
@@ -252,7 +255,7 @@ def main():
 
     ## Subscribe to Sensor Values
     rospy.Subscriber("/igvc/gps", gps, meas_gps, queue_size=1)
-    rospy.Subscriber("/imu/filtered", Imu, meas_imu, queue_size=1)
+    rospy.Subscriber("/imu/", Imu, meas_imu, queue_size=1)
     rospy.Subscriber("/igvc/velocity", velocity, meas_vel, queue_size=1)
     ## Subscribe to Control Parameters
     #rospy.Subscriber("/igvc/motors_raw", motors, update_control_signal, queue_size=1)
@@ -263,7 +266,7 @@ def main():
     # create timer with a period of 0.1 (10 Hz)
     rospy.Timer(rospy.Duration(dt), timer_callback)
 
-    init_mobi_start(None)
+    # init_mobi_start(None)
 
     # pump callbacks
     rospy.spin()

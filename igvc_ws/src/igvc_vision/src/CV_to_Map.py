@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import math
 import rospy
+import time
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose
@@ -11,12 +12,15 @@ from sensor_msgs.msg import Image
 
 occupancy_grid_size = 200
 
-# Output map scale and offset
-vertical_offset = 12
-captured_width = 40
-captured_height = 60
+start_time = None
 
-frame_rate = 10 # Hz
+# Output map scale and offset
+vertical_offset = 5
+height_offset = 58
+captured_width = 70
+captured_height = 50
+
+frame_rate = 14 # Hz
 
 preview_pub = rospy.Publisher("/igvc/preview", Image, queue_size=1)
 image_pub = rospy.Publisher("/igvc/lane_map", OccupancyGrid, queue_size=1)
@@ -46,8 +50,8 @@ class PerspectiveTransform:
         self.horizontal_corner_cut_ratio = 0.3
 
         # Output image dimensions
-        self.output_img_shape_x = 1920
-        self.output_img_shape_y = 1080
+        self.output_img_shape_x = 640
+        self.output_img_shape_y = 480
  
     # Equation to calculate how much off the top to trim. Should probably edit this once we have the robot built
     '''
@@ -92,14 +96,14 @@ class PerspectiveTransform:
 
         return output
 
-transform = PerspectiveTransform(30)
+transform = PerspectiveTransform(5)
 
 # returns a filtered image and unfiltered image. This is needed for white lines on green grass
 # output are two images, First output is the filtered image, Second output is the original pre-filtered image
 def grass_filter(og_image):
     img = cv2.cvtColor(og_image, cv2.COLOR_BGR2HSV)
     # create a lower bound for a pixel value
-    lower = np.array([0, 0, 0])
+    lower = np.array([0, 0, 100])
     # create an upper bound for a pixel values
     upper = np.array([255, 80, 200])
     # detects all white pixels wihin the range specified earlier
@@ -111,12 +115,18 @@ def grass_filter(og_image):
 
 # takes in an image and outputs an image that has redlines overlaying the detected boundries
 def camera_callback(data):
-    global img_num
+    global img_num, start_time
+
+    # start_time = time.time()
 
     read_success, image = cam.read()
+    # print(f"read_success: {read_success}, read time: {(time.time() - start_time) * 1000:02.02f}ms")
 
     if not read_success:
         return
+
+    image = cv2.GaussianBlur(image, (7,7), 0)
+    image = cv2.GaussianBlur(image, (7,7), 0)
 
     pre_or_post_filtered_image = grass_filter(image)
 
@@ -166,19 +176,24 @@ def region_of_interest(img, vertices):
     return masked_image
 
 def numpy_to_occupancyGrid(data_map):
-    # dsize is (width, height) and copyMakeBorder is (top, bottom, left, right)
-    data_map = cv2.resize(data_map, dsize=(captured_width, captured_height), interpolation=cv2.INTER_NEAREST) / 4
+    # dsize is (width, height) and copyMakeBorder is (tp, bottom, left, right)
+    data_map = cv2.dilate(data_map, (5, 5), iterations=3)
+    data_map = cv2.resize(data_map, dsize=(captured_width, captured_height), interpolation=cv2.INTER_LINEAR) / 2
     data_map = data_map[vertical_offset:,:]
-    data_map = cv2.copyMakeBorder(data_map, vertical_offset, 200 - captured_height, (200 - captured_width) // 2, (200 - captured_width) // 2, cv2.BORDER_CONSTANT, value=0)
+    data_map = cv2.copyMakeBorder(data_map, vertical_offset + height_offset, 200 - captured_height - height_offset, (200 - captured_width) // 2, (200 - captured_width) // 2, cv2.BORDER_CONSTANT, value=0)
     data_map = cv2.flip(data_map, 0)
     data_map = cv2.rotate(data_map, cv2.ROTATE_90_COUNTERCLOCKWISE)
     flattened = list(data_map.flatten().astype(int))
+
+    # print(f"data_map shape: {data_map.shape}")
 
     header.stamp = rospy.Time.now()
 
     msg = OccupancyGrid(header=header, info=map_info, data=flattened)
     image_pub.publish(msg)
-    # print(f"pub time: {(end_time - start_time) * 1000:02.02f}ms")
+
+    
+    # print(f"pub time: {(time.time() - start_time) * 1000:02.02f}ms")
 
 # created my own helper function to round up numbers
 def round_up(n, decimals):
@@ -193,6 +208,8 @@ if __name__ == '__main__':
     # rospy.Subscriber("/cv_camera/image_raw/compressed", CompressedImage, camera_callback)
     
     cam = cv2.VideoCapture(0)
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     rospy.Timer(rospy.Duration(1.0/frame_rate), camera_callback)
 

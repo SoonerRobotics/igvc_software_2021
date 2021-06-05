@@ -22,6 +22,7 @@ class IGVCPathCanvas(FigureCanvasQTAgg):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
+        # self.axes2 = fig.add_subplot(122)
         super(IGVCPathCanvas, self).__init__(fig)
 
 class IGVCWindow(QMainWindow):
@@ -76,7 +77,7 @@ class IGVCWindow(QMainWindow):
 
         # Setup draw timer
         self.timer = QTimer()
-        self.timer.setInterval(400)
+        self.timer.setInterval(300)
         self.timer.timeout.connect(self.draw_timer)
         self.timer.start()
 
@@ -85,13 +86,15 @@ class IGVCWindow(QMainWindow):
         self.ekfAtMap = None
         self.path = None
 
+        # self.cam = cv2.VideoCapture(0)
+
         # Subscribe to necessary topics
         rospy.Subscriber("/igvc_slam/local_config_space", OccupancyGrid, self.c_space_callback, queue_size=1)
         rospy.Subscriber("/igvc/state", EKFState, self.ekf_callback)
         rospy.Subscriber("/igvc/local_path", Path, self.path_callback)
         rospy.Subscriber("/igvc/velocity", velocity, self.velocity_callback)
         rospy.Subscriber("/igvc/gps", gps, self.gps_callback)
-        rospy.Subscriber("/imu/filtered", Imu, self.imu_callback)
+        rospy.Subscriber("/imu", Imu, self.imu_callback)
 
     def draw(self):
         if self.curMap and self.lastEKF and self.path:
@@ -109,7 +112,12 @@ class IGVCWindow(QMainWindow):
             self.path_canvas.axes.plot(robot_pos[1], -robot_pos[0], '.', markersize=16, color="black")
 
             self.path_canvas.axes.set_xlim(-5, 5)
-            self.path_canvas.axes.set_ylim(-5, 5)
+            self.path_canvas.axes.set_ylim(0, 10)
+
+            # yes, pic = self.cam.read()
+
+            # if yes:
+            #     self.path_canvas.axes2.imshow(pic)
 
             self.path_canvas.draw()
 
@@ -131,8 +139,8 @@ class IGVCWindow(QMainWindow):
             orientation.y,
             orientation.z,
             orientation.w)
-        yaw_rads = transformations.euler_from_quaternion(quaternion)[1]
-        yaw_rate = imu_msg.angular_velocity.y
+        yaw_rads = transformations.euler_from_quaternion(quaternion)[2]
+        yaw_rate = imu_msg.angular_velocity.z
 
         self.imu_label.setText(f"IMU: ({yaw_rads * 180 / 3.14:0.01f}°,{yaw_rate * 180 / 3.14:0.01f}°/s)")
 
@@ -144,7 +152,7 @@ class IGVCWindow(QMainWindow):
 
     def ekf_callback(self, data):
         self.lastEKF = data
-        self.pose_label.setText(f"Pose: ({data.x:0.01f}m, {data.y:0.01f}m,\n\t{data.yaw * 180/3.14:0.01f}°, {data.yaw_rate * 180 / 3.14:0.01f}°/s)")
+        self.pose_label.setText(f"Pose: ({data.x:0.01f}m, {data.y:0.01f}m,{data.left_velocity:0.01f},{data.right_velocity:0.01f}\n\t{data.yaw * 180/3.14:0.01f}°, {data.yaw_rate * 180 / 3.14:0.01f}°/s)")
 
     def c_space_callback(self, data):
         self.curMap = data.data
