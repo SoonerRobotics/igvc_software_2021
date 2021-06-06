@@ -53,6 +53,7 @@ R = None # meas uncertainty
 initialized = False # init flag
 mobi_start = False # mobility start/stop flag
 start_gps = None # starting GPS coords
+cur_gps = None # equiv GPS coords for our EKF position
 
 ## Publishers
 state_pub = None
@@ -170,14 +171,18 @@ def update():
 
 ## Run the KF
 def timer_callback(event):
+    global cur_gps
     if not initialized:
         initialize()
     else:
         predict()
         measure()
         update()
+        cur_gps = calc_equiv_gps()
         ## Publish the state for the robot to use.
         state_msg = EKFState()
+        state_msg.latitude = cur_gps[0]
+        state_msg.longitude = cur_gps[1]
         state_msg.x = X[0]
         state_msg.x_velocity = X[1]
         state_msg.y = X[2]
@@ -195,6 +200,12 @@ def timer_callback(event):
 #     line = name + ": x=" + "{:.2f}".format(state[0]) + ", y=" + "{:.2f}".format(state[1]) \
 #         + ", x-vel=" + "{:.2f}".format(state[2]) + ", y-vel=" + "{:.2f}".format(state[3])
 #     print(line)
+
+# calculate the equivalent GPS coords for our EKF position
+def calc_equiv_gps(x,y):
+    lat = x / lat_to_m + start_gps.latitude
+    lon = y / lon_to_m + start_gps.longitude
+    return (lon,lat)
 
 ## Functions to receive sensor readings.
 ## Stay in buffer until measure() is run each clock cycle.
