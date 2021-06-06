@@ -4,6 +4,7 @@ import copy
 import numpy as np
 import rospy
 import math
+import itertools
 
 from geometry_msgs.msg import Pose
 from nav_msgs.msg import OccupancyGrid, MapMetaData
@@ -24,8 +25,14 @@ metadata = MapMetaData(map_load_time = rospy.Time(), resolution=0.1,
 header = Header()
 header.frame_id = "map"
 
-circle_around_indicies = [(x_i, y_i, math.sqrt(x_i**2 + y_i**2)) for x_i, y_i in zip(range(-10, 11), range(-10, 11)) if x_i**2 + y_i ** 2 <= 100]
-no_go_range = 6
+max_range = 8
+xxxs = list(range(-max_range, max_range + 1))
+circle_around_indicies = []
+for x in xxxs:
+    for y in xxxs:
+        if math.sqrt(x**2 + y**2) < max_range:
+            circle_around_indicies.append((x, y, math.sqrt(x**2 + y**2)))
+no_go_range = 4
 
 # Initializiation
 last_lidar = None
@@ -67,12 +74,12 @@ def config_space_callback(event):
 
                         if 0 <= (x + x_i) < 200 and 0 <= (y + y_i) < 200:
                             val_at_index = config_space[index]
-                            linear_t = 100 - (dist - no_go_range) / (10 - no_go_range) * 100
+                            linear_t = max_range**2 - ((dist - no_go_range) / (max_range - no_go_range) * max_range**2)
 
-                            if dist <= no_go_range and val_at_index <= 100:
+                            if dist <= no_go_range:
                                 # obstacle expansion
                                 config_space[index] = 100
-                            elif val_at_index <= dist * linear_t:
+                            elif dist <= 100 and val_at_index <= linear_t:
                                 # linearly decay
                                 config_space[index] = int(linear_t)
 
@@ -92,7 +99,7 @@ def igvc_slam_node():
     vision_sub = rospy.Subscriber("/igvc/lane_map", OccupancyGrid, lanes_camera_callback, queue_size=10)
 
     # Make a timer to publish configuration spaces periodically
-    timer = rospy.Timer(rospy.Duration(secs=0.25), config_space_callback, oneshot=False)
+    timer = rospy.Timer(rospy.Duration(secs=0.2), config_space_callback, oneshot=False)
 
     # Wait for topic updates
     rospy.spin()

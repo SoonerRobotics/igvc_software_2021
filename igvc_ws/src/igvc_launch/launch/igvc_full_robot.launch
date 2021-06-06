@@ -10,7 +10,7 @@
 
     <!-- Mapping -->
     <node name="igvc_slam_node" pkg="igvc_slam" type="igvc_slam_node.py" output="screen"/>
-    <include file="$(find igvc_vision)/launch/igvc_lidar.launch"/>
+    <!-- <include file="$(find igvc_vision)/launch/igvc_lidar.launch"/> -->
     <include file="$(find igvc_vision)/launch/igvc_vision.launch"/>
 
     <!-- Serial and firmware -->

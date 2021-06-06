@@ -48,8 +48,8 @@ class VelocityCANReadThread(threading.Thread):
                     left_speed, right_speed, max_speed = struct.unpack("bbB", msg.data)
 
                     velPkt = velocity()
-                    velPkt.leftVel = left_speed / 127 * max_speed / 10 * 2
-                    velPkt.rightVel = -right_speed / 127 * max_speed / 10 * 2
+                    velPkt.leftVel = left_speed / 127 * max_speed / 10
+                    velPkt.rightVel = -right_speed / 127 * max_speed / 10
 
                     # print(f"Received {velPkt.leftVel} {velPkt.rightVel}")
 
@@ -98,14 +98,21 @@ class GPSSerialReadThread(threading.Thread):
             except ValueError:
                 pass
 
+def clamp(val, min, max):
+    if val < min:
+        return min
+    if val > max:
+        return max
+    return val
+
 # Constructs motor message from given data and sends to serial
 def motors_out(data):
 
     # Soon to be firmware corrections
     data.right = -data.right
 
-    left_speed = int(data.left / 2.0 / MAX_SPEED * 127)
-    right_speed = int(data.right / 2.0 / MAX_SPEED * 127)
+    left_speed = clamp(int(data.left / MAX_SPEED * 127), -128, 127)
+    right_speed = clamp(int(data.right / MAX_SPEED * 127), -128, 127)
 
     packed_data = struct.pack('bbB', left_speed, right_speed, int(MAX_SPEED * 10))
 
