@@ -213,12 +213,16 @@ def calc_equiv_gps(x,y):
 def meas_gps(gps_msg):
     global Z_buffer, start_gps, R
     # we're treating this input as a direct measure of x and y
+    # NOTE for the GPS and robot coordinate systems to line up, 
+    # the robot must be turned on while facing due north. It can be turned 
+    # on facing north and then rotated around to south if that's our start direction.
+    # This ensures yaw = 0.0 equals north.
     if gps_msg.hasSignal:
         if not mobi_start:
             print(f"not mobi stop")
             if start_gps is None:
-                R[0,0] = 10
-                R[1,1] = 10
+                R[0,0] = 10000
+                R[1,1] = 10000
                 start_gps = gps()
                 start_gps.latitude = gps_msg.latitude
                 start_gps.longitude = gps_msg.longitude
@@ -231,6 +235,7 @@ def meas_gps(gps_msg):
             # TODO verify this coordinate system matches up
             Z_buffer[0] = (gps_msg.latitude - start_gps.latitude) * lat_to_m
             Z_buffer[1] = -(gps_msg.longitude - start_gps.longitude) * lon_to_m
+            # TODO TODO I made the y negated, see if this actually fixes it or remove it if its worse
 
 def meas_imu(imu_msg):
     global Z_buffer
