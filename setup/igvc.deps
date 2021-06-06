@@ -5,9 +5,9 @@ repositories:
     ../igvc_ws/src/deps/cv_camera:
         type: git
         url: https://github.com/OTL/cv_camera.git
-    ../igvc_ws/src/deps/yostlabs_imu:
+    ../igvc_ws/src/deps/ros_y3space_driver:
         type: git
-        url: https://github.com/SoonerRobotics/yostlab_imu.git
+        url: https://github.com/MrCerealKiller/ros_y3space_driver.git
         version: master
     ../igvc_ws/src/deps/serial:
         type: git

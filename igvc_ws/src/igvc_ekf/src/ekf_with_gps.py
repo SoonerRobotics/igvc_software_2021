@@ -8,6 +8,8 @@ from tf import transformations
 from math import sin, cos
 import numpy as np
 
+import time
+
 np.set_printoptions(precision=4)
 
 ## Robot Characteristics
@@ -34,7 +36,7 @@ lat_to_m = 111086.33 #linear conversion latitude to meters
 lon_to_m = 81972.46 #linear conversion longitude to meters
 
 ## Kalman Filter variables
-dt = 0.1 # period in seconds
+dt = 0.05 # period in seconds
 X = None # current state
 X_next = None # prediction for next
 F = None # state transition matrix (dynamic model)
@@ -59,13 +61,13 @@ state_pub = None
 def initialize():
     global initialized, Q, R, X, X_next, F, F_trans, Z, H, H_trans, P, P_next
     ## Set uncertainties
-    Q = np.multiply(1.1,I_8)
+    Q = np.multiply(1.5,I_8)
     #R = np.multiply(0.1,I_4)
     R = np.matrix([
-        [35,0,0,0,0,0],
-        [0,25,0,0,0,0],
-        [0,0,0.0017,0,0,0],
-        [0,0,0,0.001,0,0],
+        [100000000,0,0,0,0,0],
+        [0,100000000,0,0,0,0],
+        [0,0,0.4,0,0,0],
+        [0,0,0,0.1,0,0],
         [0,0,0,0,0.005,0],
         [0,0,0,0,0,0.005]])
 
@@ -199,18 +201,19 @@ def timer_callback(event):
 def meas_gps(gps_msg):
     global Z_buffer, start_gps
     # we're treating this input as a direct measure of x and y
-    if not mobi_start:
-        if start_gps is None:
-            start_gps.latitude = gps_msg.latitude
-            start_gps.longitude = gps_msg.longitude
+    if gps_msg.hasSignal:
+        if not mobi_start:
+            if start_gps is None:
+                start_gps.latitude = gps_msg.latitude
+                start_gps.longitude = gps_msg.longitude
+            else:
+                # average out the start position to make it more accurate
+                start_gps.latitude = 0.9 * start_gps.latitude + 0.1 * gps_msg.latitude
+                start_gps.longitude = 0.9 * start_gps.longitude + 0.1 * gps_msg.longitude
         else:
-            # average out the start position to make it more accurate
-            start_gps.latitude = 0.9 * start_gps.latitude + 0.1 * gps_msg.latitude
-            start_gps.longitude = 0.9 * start_gps.longitude + 0.1 * gps_msg.longitude
-    else:
-        # TODO verify this coordinate system matches up
-        Z_buffer[0] = (gps_msg.latitude - start_gps.latitude) * lat_to_m
-        Z_buffer[1] = (gps_msg.longitude - start_gps.longitude) * lon_to_m
+            # TODO verify this coordinate system matches up
+            Z_buffer[0] = (gps_msg.latitude - start_gps.latitude) * lat_to_m
+            Z_buffer[1] = (gps_msg.longitude - start_gps.longitude) * lon_to_m
 
 def meas_imu(imu_msg):
     global Z_buffer
@@ -222,17 +225,18 @@ def meas_imu(imu_msg):
         orientation.z,
         orientation.w)
     # do bad stuff to make the simulator work
-    bad_quat = [-quaternion[3], quaternion[1], -quaternion[2], quaternion[0]]
-    #print(transformations.euler_from_quaternion(bad_quat))
-    yaw_rads = transformations.euler_from_quaternion(bad_quat)[2] #TODO check sign #yaw should be 2 but hmmm
+    # bad_quat = [-quaternion[3], quaternion[1], -quaternion[2], quaternion[0]]
+    shit_ass = [f"{x * 180 / 3.1415:4.01f}" for x in transformations.euler_from_quaternion(quaternion)]
+    # print(shit_ass)
+    yaw_rads = transformations.euler_from_quaternion(quaternion)[1] #TODO check sign #yaw should be 2 but hmmm
     Z_buffer[2] = yaw_rads
-    yaw_rate = -imu_msg.angular_velocity.z #TODO check sign
+    yaw_rate = imu_msg.angular_velocity.y #TODO check sign
     Z_buffer[3] = yaw_rate
     
 def meas_vel(vel_msg):
     global Z_buffer
-    Z_buffer[4] = vel_msg.leftVel
-    Z_buffer[5] = vel_msg.rightVel
+    Z_buffer[4] = vel_msg.leftVel / WHEEL_RADIUS
+    Z_buffer[5] = vel_msg.rightVel / WHEEL_RADIUS
 
 def init_mobi_start(mobi_msg):
     global mobi_start
@@ -248,7 +252,7 @@ def main():
 
     ## Subscribe to Sensor Values
     rospy.Subscriber("/igvc/gps", gps, meas_gps, queue_size=1)
-    rospy.Subscriber("/igvc/imu", Imu, meas_imu, queue_size=1)
+    rospy.Subscriber("/imu/filtered", Imu, meas_imu, queue_size=1)
     rospy.Subscriber("/igvc/velocity", velocity, meas_vel, queue_size=1)
     ## Subscribe to Control Parameters
     #rospy.Subscriber("/igvc/motors_raw", motors, update_control_signal, queue_size=1)
@@ -258,6 +262,8 @@ def main():
     
     # create timer with a period of 0.1 (10 Hz)
     rospy.Timer(rospy.Duration(dt), timer_callback)
+
+    init_mobi_start(None)
 
     # pump callbacks
     rospy.spin()
