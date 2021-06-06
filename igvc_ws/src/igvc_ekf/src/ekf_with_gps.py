@@ -172,9 +172,7 @@ def update():
 ## Run the KF
 def timer_callback(event):
     global cur_gps
-    if not initialized:
-        initialize()
-    else:
+    if initialized:
         predict()
         measure()
         update()
@@ -260,6 +258,9 @@ def main():
     global state_pub
     # initalize the node in ROS
     rospy.init_node('ekf_with_gps')
+
+    # initialize the EKF
+    initialize()
 
     ## Subscribe to Mobility Start/Stop messages
     rospy.Subscriber("/igvc/mobstart", Bool, init_mobi_start, queue_size=1)
