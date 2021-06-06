@@ -225,7 +225,7 @@ def meas_gps(gps_msg):
         else:
             # TODO verify this coordinate system matches up
             Z_buffer[0] = (gps_msg.latitude - start_gps.latitude) * lat_to_m
-            Z_buffer[1] = (gps_msg.longitude - start_gps.longitude) * lon_to_m
+            Z_buffer[1] = -(gps_msg.longitude - start_gps.longitude) * lon_to_m
 
 def meas_imu(imu_msg):
     global Z_buffer

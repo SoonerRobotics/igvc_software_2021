@@ -43,9 +43,48 @@ curEKF = EKFState()
 # Best position to head to on the map (D* goal pos)
 best_pos = (0,0)
 
+## Stuff for No Man's Land navigation
+lat_to_m = 111086.33
+lon_to_m = 81972.46
+in_nml = False # true when we are in No Man's Land
+N_to_S = True # are we going north to south?
+nml_path = [ # N to S
+    (43.66831,-83.21637),
+    (43.66825,-83.21637),
+    (43.66822,-83.21637),
+    (43.66817,-83.21637),
+    (43.66816,-83.21637),
+    (43.66811,-83.21637)]
+
+# check if we're in No Man's Land, which way we're going, and detect when we leave it.
+# this can be used to make a state machine for the navigation to behave differently in NML,
+# and follow nml_path rather than perform reactively.
+def check_in_nml():
+    global nml_path, in_nml, N_to_S
+    if not in_nml:
+        # check if we're in NML, and determine which way we're going (N or S)
+        N_lon_match = abs(curEKF.longitude - nml_path[0][1]) < 10 / lon_to_m
+        S_lon_match = abs(curEKF.longitude - nml_path[-1][1]) < 10 / lon_to_m
+        in_lat_range = curEKF.latitude < nml_path[0][0] and curEKF.latitude > nml_path[-1][0]
+        if in_lat_range and N_lon_match:
+            in_nml = True
+        elif in_lat_range and S_lon_match:
+            N_to_S = True
+            #nml_path = reversed(nml_path)
+            in_nml = True
+    else: # already in NML
+        # check if we've made it back out of NML
+        if N_to_S and curEKF.latitude < nml_path[-1][0]:
+            in_nml = False
+        elif (not N_to_S) and curEKF.latitude > nml_path[0][0]:
+            in_nml = False
+
+
 def ekf_callback(data):
     global curEKF
     curEKF = data
+    # see if this new EKF state changes whether or not we're in NML
+    check_in_nml()
 
 def true_pose_callback(data):
     global curEKF
