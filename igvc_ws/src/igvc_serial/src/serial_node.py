@@ -7,7 +7,7 @@ import serial
 import can
 import struct
 
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from igvc_msgs.msg import motors, velocity, gps
 
 # ROS node that facilitates all serial communications within the robot
@@ -16,6 +16,8 @@ from igvc_msgs.msg import motors, velocity, gps
 
 serials = {}
 cans = {}
+
+mob_publisher = rospy.Publisher("/igvc/mobstart", Bool, queue_size=1)
 
 MAX_SPEED = 2.2 # m/s
 CAN_ID_ESTOP = 0
@@ -62,6 +64,7 @@ class VelocityCANReadThread(threading.Thread):
                 if msg.arbitration_id == CAN_ID_MOBSTART:
                     # Start blinking
                     serials["gps"].write(b'b')
+                    mob_publisher.publish(Bool(True))
 
 
 class GPSSerialReadThread(threading.Thread):

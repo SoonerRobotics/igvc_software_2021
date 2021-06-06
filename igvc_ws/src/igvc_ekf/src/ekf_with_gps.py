@@ -176,7 +176,10 @@ def timer_callback(event):
         predict()
         measure()
         update()
-        cur_gps = calc_equiv_gps(X[0], X[2])
+        if mobi_start:
+            cur_gps = calc_equiv_gps(X[0], X[2])
+        else:
+            cur_gps = (0,0)
         ## Publish the state for the robot to use.
         state_msg = EKFState()
         state_msg.latitude = cur_gps[0]
@@ -212,9 +215,10 @@ def meas_gps(gps_msg):
     # we're treating this input as a direct measure of x and y
     if gps_msg.hasSignal:
         if not mobi_start:
+            print(f"not mobi stop")
             if start_gps is None:
-                R[0,0] = 2
-                R[1,1] = 2
+                R[0,0] = 10
+                R[1,1] = 10
                 start_gps = gps()
                 start_gps.latitude = gps_msg.latitude
                 start_gps.longitude = gps_msg.longitude
@@ -223,6 +227,7 @@ def meas_gps(gps_msg):
                 start_gps.latitude = 0.9 * start_gps.latitude + 0.1 * gps_msg.latitude
                 start_gps.longitude = 0.9 * start_gps.longitude + 0.1 * gps_msg.longitude
         else:
+            print(f"mobis trat pogog")
             # TODO verify this coordinate system matches up
             Z_buffer[0] = (gps_msg.latitude - start_gps.latitude) * lat_to_m
             Z_buffer[1] = (gps_msg.longitude - start_gps.longitude) * lon_to_m

@@ -152,7 +152,7 @@ class IGVCWindow(QMainWindow):
 
     def ekf_callback(self, data):
         self.lastEKF = data
-        self.pose_label.setText(f"Pose: ({data.x:0.01f}m, {data.y:0.01f}m,{data.left_velocity:0.01f},{data.right_velocity:0.01f}\n\t{data.yaw * 180/3.14:0.01f}°, {data.yaw_rate * 180 / 3.14:0.01f}°/s)")
+        self.pose_label.setText(f"Pose: {data.x:0.01f}m, {data.y:0.01f}m,{data.left_velocity:0.01f}m/s,{data.right_velocity:0.01f}m/s\n\t{data.yaw * 180/3.14:0.01f}°, {data.yaw_rate * 180 / 3.14:0.01f}°/s\n\t{data.latitude}, {data.longitude}")
 
     def c_space_callback(self, data):
         self.curMap = data.data
