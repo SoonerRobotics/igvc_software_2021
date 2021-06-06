@@ -178,7 +178,7 @@ def timer_callback(event):
         predict()
         measure()
         update()
-        cur_gps = calc_equiv_gps()
+        cur_gps = calc_equiv_gps(X[0], X[2])
         ## Publish the state for the robot to use.
         state_msg = EKFState()
         state_msg.latitude = cur_gps[0]
