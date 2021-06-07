@@ -67,8 +67,8 @@ def initialize():
     R = np.matrix([
         [1000000000,0,0,0,0,0],
         [0,1000000000,0,0,0,0],
-        [0,0,10,0,0,0],
-        [0,0,0,10,0,0],
+        [0,0,500000,0,0,0],
+        [0,0,0,10000000000,0,0],
         [0,0,0,0,0.005,0],
         [0,0,0,0,0,0.005]])
 
@@ -86,7 +86,7 @@ def initialize():
         [0,0,1,dt,0,0,0,0],
         [0,0,0,0,0,0,0.5*WHEEL_RADIUS*sin_phi,0.5*WHEEL_RADIUS*sin_phi],
         [0,0,0,0,1,dt,0,0],
-        [0,0,0,0,0,0,WHEEL_RADIUS/WHEELBASE_LEN,-WHEEL_RADIUS/WHEELBASE_LEN],
+        [0,0,0,0,0,0,-WHEEL_RADIUS/WHEELBASE_LEN,WHEEL_RADIUS/WHEELBASE_LEN],
         [0,0,0,0,0,0,1,0],
         [0,0,0,0,0,0,0,1]])
     F_trans = np.transpose(F)
@@ -277,7 +277,7 @@ def main():
 
     ## Subscribe to Sensor Values
     rospy.Subscriber("/igvc/gps", gps, meas_gps, queue_size=1)
-    rospy.Subscriber("/imu/", Imu, meas_imu, queue_size=1)
+    rospy.Subscriber("/imu/filtered", Imu, meas_imu, queue_size=1)
     rospy.Subscriber("/igvc/velocity", velocity, meas_vel, queue_size=1)
     ## Subscribe to Control Parameters
     #rospy.Subscriber("/igvc/motors_raw", motors, update_control_signal, queue_size=1)

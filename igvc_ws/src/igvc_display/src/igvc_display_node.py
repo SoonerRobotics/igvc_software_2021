@@ -94,7 +94,7 @@ class IGVCWindow(QMainWindow):
         rospy.Subscriber("/igvc/local_path", Path, self.path_callback)
         rospy.Subscriber("/igvc/velocity", velocity, self.velocity_callback)
         rospy.Subscriber("/igvc/gps", gps, self.gps_callback)
-        rospy.Subscriber("/imu", Imu, self.imu_callback)
+        rospy.Subscriber("/imu/filtered", Imu, self.imu_callback)
 
     def draw(self):
         if self.curMap and self.lastEKF and self.path:
