@@ -39,6 +39,7 @@ cost_map = None
 
 # Latest EKF update
 curEKF = EKFState()
+firstGPSEKF = None
 
 # Best position to head to on the map (D* goal pos)
 best_pos = (0,0)
@@ -48,13 +49,16 @@ lat_to_m = 111086.33
 lon_to_m = 81972.46
 in_nml = False # true when we are in No Man's Land
 N_to_S = True # are we going north to south?
+nml_wait_timer = 0
 nml_path = [ # N to S
+    (43.66837,-83.21637)
     (43.66831,-83.21637),
     (43.66825,-83.21637),
     (43.66822,-83.21637),
     (43.66817,-83.21637),
     (43.66816,-83.21637),
-    (43.66811,-83.21637)]
+    (43.66811,-83.21637),
+    (43.66805,-83.21637)]
 
 # check if we're in No Man's Land, which way we're going, and detect when we leave it.
 # this can be used to make a state machine for the navigation to behave differently in NML,
@@ -65,24 +69,32 @@ def check_in_nml():
         # check if we're in NML, and determine which way we're going (N or S)
         N_lon_match = abs(curEKF.longitude - nml_path[0][1]) < 10 / lon_to_m
         S_lon_match = abs(curEKF.longitude - nml_path[-1][1]) < 10 / lon_to_m
-        in_lat_range = curEKF.latitude < nml_path[0][0] and curEKF.latitude > nml_path[-1][0]
-        if in_lat_range and N_lon_match:
+
+        N_lat_match = curEKF.latitude < nml_path[1][0]
+        S_lat_match = curEKF.latitude > nml_path[-2][0]
+
+        if N_lat_match and N_lon_match:
             in_nml = True
-        elif in_lat_range and S_lon_match:
-            N_to_S = True
-            #nml_path = reversed(nml_path)
+            print("Arrived in NML, N to S")
+        elif S_lat_match and S_lon_match:
             in_nml = True
+            print("Arrived in NML, S to N")
+            N_to_S = False
     else: # already in NML
         # check if we've made it back out of NML
         if N_to_S and curEKF.latitude < nml_path[-1][0]:
             in_nml = False
+            print("Finished NML")
         elif (not N_to_S) and curEKF.latitude > nml_path[0][0]:
             in_nml = False
+            print("Finished NML")
 
 
 def ekf_callback(data):
-    global curEKF
+    global curEKF, firstGPSEKF
     curEKF = data
+    if firstGPSEKF is None and data.latitude < -1:
+        firstGPSEKF = data
     # see if this new EKF state changes whether or not we're in NML
     check_in_nml()
 
@@ -194,8 +206,19 @@ def path_point_to_local_pose_stamped(pp0, pp1, header):
 
     return pose_stamped
 
+def global_path_point_to_global_pose_stamped(pp0, pp1, header):
+    pose_stamped = PoseStamped(header=header)
+    pose_stamped.pose = Pose()
+
+    point = Point()
+    point.x = pp0
+    point.y = pp1
+    pose_stamped.pose.position = point
+
+    return pose_stamped
+
 def make_map(c_space):
-    global planner, map_init, path_failed, prev_state, path_seq
+    global planner, map_init, path_failed, prev_state, path_seq, nml_wait_timer
 
     if cost_map is None or curEKF is None:
         return
@@ -209,25 +232,34 @@ def make_map(c_space):
     # If this is the first time receiving a map, or if the path failed to be made last time (for robustness),
     # initialize the path planner and plan the first path
 
-    # TODO: Make this not True again lol
-    if True:
+    # Are we just doing the regular trash nav?
+    if not in_nml:
         planner.initialize(200, 200, robot_pos, best_pos, cost_map)
         path = planner.plan()
         map_init = True
-    # Otherwise, replan the path
+    # Otherwise, we are in NML
     else:
-        # Transform the map to account for heading changes
-        hdg = curEKF.yaw
-        #TODO: rotate map to 0 degree heading
+        if nml_wait_timer > 5:
+            path = [((path_pt[0]-firstGPSEKF.latitude)*lat_to_m, (path_pt[1]-firstGPSEKF.longitude)*lon_to_m) for path_pt in nml_path]
+            if not N_to_S:
+                path.reverse()
 
-        # Calculate the map shift based on the change in EKF state
-        map_shift = (int(curEKF.x / GRID_SIZE) - prev_state[0], int(curEKF.y / GRID_SIZE) - prev_state[1])
-        prev_state = (int(curEKF.x / GRID_SIZE), int(curEKF.y / GRID_SIZE))
+            header = Header()
+            header.seq = path_seq
+            header.stamp = rospy.Time.now()
+            header.frame_id = "base_link"
 
-        # Request the planner replan the path
-        path = planner.replan(robot_pos, best_pos, cost_map) #, map_shift) # TODO: add in shifting
+            path_seq += 1
 
-    if path is not None:
+            global_path = Path(header = header)
+            global_path.poses = [global_path_point_to_global_pose_stamped(path_point[0], path_point[1], header) for path_point in path]
+
+            global_path_pub.publish(global_path)
+        else:
+            nml_wait_timer += 1
+            global_path_pub.publish([]) # Stop moving for a minute, let EKF figure itself out
+
+    if path is not None and not in_nml:
         header = Header()
         header.seq = path_seq
         header.stamp = rospy.Time.now()

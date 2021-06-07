@@ -1,8 +1,8 @@
 <launch>
     <!-- Run required nodes-->
-    <node pkg="yostlab_imu" name="yostlab_driver_node" type="yostlab_driver_node">
+    <!-- <node pkg="yostlab_imu" name="yostlab_driver_node" type="yostlab_driver_node">
         <param name="SERIAL_PORT" value="/dev/ttyACM0" />
-    </node>
-    <!-- <include file="$(find y3space_driver)/launch/driver.launch" /> -->
+    </node> -->
+    <include file="$(find y3space_driver)/launch/driver.launch" />
     <!-- <node name="imu_node" pkg="igvc_serial" type="imu_node.py" output="screen"/> -->
 </launch>
