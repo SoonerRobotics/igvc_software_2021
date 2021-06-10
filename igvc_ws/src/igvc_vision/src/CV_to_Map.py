@@ -1,49 +1,58 @@
 #!/usr/bin/env python3
-import os
 import cv2
 import numpy as np
-import matplotlib
-import time
-#matplotlib.use('Agg')
-import matplotlib.image as mpimg
-from matplotlib import pyplot as plt
-import statistics
 import math
 import rospy
+import time
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose
-from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image, CompressedImage
+from sensor_msgs.msg import Image
 
 
 occupancy_grid_size = 200
-counter = 0
-scale = -1
-divider = 10
-img_num = 0
 
-grass_image = True
+start_time = None
 
-bridge = CvBridge()
+# Output map scale and offset
+vertical_offset = 5
+height_offset = 58
+captured_width = 70
+captured_height = 50
+
+frame_rate = 14 # Hz
+
 preview_pub = rospy.Publisher("/igvc/preview", Image, queue_size=1)
 image_pub = rospy.Publisher("/igvc/lane_map", OccupancyGrid, queue_size=1)
+
+header = Header()
+header.frame_id = "base_link"
+
+map_info = MapMetaData()
+map_info.width = occupancy_grid_size
+map_info.height = occupancy_grid_size
+map_info.resolution = 0.1
+map_info.origin = Pose()
+map_info.origin.position.x = -10
+map_info.origin.position.y = -10
+
+cam = None
 
 class PerspectiveTransform:
 
     def __init__(self, camera_angle):
-        self.top_trim_ratio = 0.15
+        self.top_trim_ratio = 0.0
         
         # Camera angle in degrees, where 0 is when camera is facing perpendicular to the ground
         self.camera_angle = camera_angle
 
         # Ratio of number of pixels between top points of the trapezoid and their nearest vertical border
-        self.horizontal_corner_cut_ratio = 0.4
+        self.horizontal_corner_cut_ratio = 0.3
 
         # Output image dimensions
         self.output_img_shape_x = 640
         self.output_img_shape_y = 480
-    
+ 
     # Equation to calculate how much off the top to trim. Should probably edit this once we have the robot built
     '''
     Calculates how much of the top portion of the image needs to be trimmed
@@ -92,53 +101,34 @@ transform = PerspectiveTransform(5)
 # returns a filtered image and unfiltered image. This is needed for white lines on green grass
 # output are two images, First output is the filtered image, Second output is the original pre-filtered image
 def grass_filter(og_image):
-    kernel = np.ones((3, 3), np.uint8)
-
-    result = og_image.copy()
     img = cv2.cvtColor(og_image, cv2.COLOR_BGR2HSV)
     # create a lower bound for a pixel value
-    lower = np.array([0, 0, 200])
+    lower = np.array([0, 0, 100])
     # create an upper bound for a pixel values
-    upper = np.array([179, 77, 255])
+    upper = np.array([255, 80, 200])
     # detects all white pixels wihin the range specified earlier
     mask = cv2.inRange(img, lower, upper)
-    result = cv2.bitwise_and(result, result, mask=mask)
+    mask = 255 - mask
 
-    # cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-
-    # for c in cnts:
-    #     area = cv2.contourArea(c)
-    #     if area < 1:
-    #         cv2.drawContours(result, [c], -1, (0, 0, 0), -1)
-
-    # gradient = cv2.morphologyEx(mask, cv2.MORPH_GRADIENT, kernel)
-
-    # plt.imshow(result)
-    # plt.show()
-
-    return result, og_image
+    return mask
 
 
 # takes in an image and outputs an image that has redlines overlaying the detected boundries
 def camera_callback(data):
-    global img_num
-    img_num += 1
-    if img_num % 8 != 0:
-        return
-    start_time = time.time()
-    image = bridge.compressed_imgmsg_to_cv2(data, desired_encoding="passthrough")
+    global img_num, start_time
 
-    # flag for seeing if you're dealing with grassy images or not
-    if grass_image:
-        # for white lines on grassy photos need this part for pre-processing before being able to detect white lines
-        img_list = grass_filter(image)
-        pre_or_post_filtered_image = img_list[0]
-        original_overlay_image = img_list[1]
-    else:
-        # need this if testing on actual roads with white lines borders
-        pre_or_post_filtered_image = image
-        original_overlay_image = image
+    # start_time = time.time()
+
+    read_success, image = cam.read()
+    # print(f"read_success: {read_success}, read time: {(time.time() - start_time) * 1000:02.02f}ms")
+
+    if not read_success:
+        return
+
+    image = cv2.GaussianBlur(image, (7,7), 0)
+    image = cv2.GaussianBlur(image, (7,7), 0)
+
+    pre_or_post_filtered_image = grass_filter(image)
 
     # gives the height and width of the image from the dimensions given
     height = image.shape[0]
@@ -152,19 +142,19 @@ def camera_callback(data):
     ]
 
     # convert to grayscale
-    gray_image = cv2.cvtColor(pre_or_post_filtered_image, cv2.COLOR_RGB2GRAY)
+    # gray_image = cv2.cvtColor(pre_or_post_filtered_image, cv2.COLOR_RGB2GRAY)
+    gray_image = pre_or_post_filtered_image
 
     # crop operation at the end of the cannyed pipeline so cropped edge doesn't get detected
     cropped_image = region_of_interest(gray_image, np.array([region_of_interest_vertices], np.int32))
 
-    perpsective_crop = transform.trim_top_border(cropped_image)
+    blurred = cv2.GaussianBlur(cropped_image, (7, 7), 0)
+    blurred[blurred < 245] = 0
+
+    perpsective_crop = transform.trim_top_border(blurred)
     perspective_warp = transform.convert_to_flat(perpsective_crop)
 
-    pkt = bridge.cv2_to_imgmsg(perspective_warp)
-    preview_pub.publish(pkt)
-
     # publishes to the node
-    end_time = time.time()
     numpy_to_occupancyGrid(perspective_warp)
     # print(f"CV time: {(end_time - start_time) * 1000:02.02f}ms")
 
@@ -186,30 +176,24 @@ def region_of_interest(img, vertices):
     return masked_image
 
 def numpy_to_occupancyGrid(data_map):
-    start_time = time.time()
-    data_map = cv2.resize(data_map, dsize=(180, 110), interpolation=cv2.INTER_NEAREST) / 4
-    data_map = data_map[12:,:]
-    data_map = cv2.copyMakeBorder(data_map, 12, 90, 10, 10, cv2.BORDER_CONSTANT, value=0)
+    # dsize is (width, height) and copyMakeBorder is (tp, bottom, left, right)
+    data_map = cv2.dilate(data_map, (5, 5), iterations=3)
+    data_map = cv2.resize(data_map, dsize=(captured_width, captured_height), interpolation=cv2.INTER_LINEAR) / 2
+    data_map = data_map[vertical_offset:,:]
+    data_map = cv2.copyMakeBorder(data_map, vertical_offset + height_offset, 200 - captured_height - height_offset, (200 - captured_width) // 2, (200 - captured_width) // 2, cv2.BORDER_CONSTANT, value=0)
     data_map = cv2.flip(data_map, 0)
     data_map = cv2.rotate(data_map, cv2.ROTATE_90_COUNTERCLOCKWISE)
     flattened = list(data_map.flatten().astype(int))
-    end_time = time.time()
 
-    header = Header()
+    # print(f"data_map shape: {data_map.shape}")
+
     header.stamp = rospy.Time.now()
-    header.frame_id = "base_link"
-
-    map_info = MapMetaData()
-    map_info.width = occupancy_grid_size
-    map_info.height = occupancy_grid_size
-    map_info.resolution = 0.1
-    map_info.origin = Pose()
-    map_info.origin.position.x = -10
-    map_info.origin.position.y = -10
 
     msg = OccupancyGrid(header=header, info=map_info, data=flattened)
     image_pub.publish(msg)
-    # print(f"pub time: {(end_time - start_time) * 1000:02.02f}ms")
+
+    
+    # print(f"pub time: {(time.time() - start_time) * 1000:02.02f}ms")
 
 # created my own helper function to round up numbers
 def round_up(n, decimals):
@@ -221,6 +205,13 @@ if __name__ == '__main__':
     # call pipeline function which will return a data_map which is just a 2d numpy array
     # Need to subscribe to an image node for images data to use
     rospy.init_node('lane_finder', anonymous=True)
-    rospy.Subscriber("/igvc/camera/compressed", CompressedImage, camera_callback)
-    # while true loop
+    # rospy.Subscriber("/cv_camera/image_raw/compressed", CompressedImage, camera_callback)
+    
+    cam = cv2.VideoCapture(0)
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+    rospy.Timer(rospy.Duration(1.0/frame_rate), camera_callback)
+
+# while true loop
     rospy.spin()

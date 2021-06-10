@@ -132,7 +132,7 @@ def path_point_to_global_pose_stamped(robot_pos, pp0, pp1, header):
     psi = map_reference[2]
 
     new_x = x * math.cos(psi) - y * math.sin(psi) + dx
-    new_y = y * math.cos(psi) + x * math.sin(psi) + dy
+    new_y = -(y * math.cos(psi) + x * math.sin(psi)) + dy
 
     pose_stamped = PoseStamped(header=header)
     pose_stamped.pose = Pose()
@@ -234,7 +234,7 @@ def mt_dstar_node():
         rospy.Subscriber("/igvc/state", EKFState, ekf_callback)
 
     # Make a timer to publish new paths
-    timer = rospy.Timer(rospy.Duration(secs=0.3), make_map, oneshot=False)
+    timer = rospy.Timer(rospy.Duration(secs=0.2), make_map, oneshot=False)
 
     if SHOW_PLOTS:
         setup_pyplot()
