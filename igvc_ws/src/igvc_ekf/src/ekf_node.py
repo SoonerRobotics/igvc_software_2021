@@ -59,7 +59,25 @@ def main():
 
     # initialize the EKF
     dt = 0.02
-    ekf = EKF(dt = dt)
+    # 8D process noise matrix
+    Q = np.matrix([
+        [1.5,0,0,0,0,0,0,0],
+        [0,1.5,0,0,0,0,0,0],
+        [0,0,1.5,0,0,0,0,0],
+        [0,0,0,1.5,0,0,0,0],
+        [0,0,0,0,1.5,0,0,0],
+        [0,0,0,0,0,1.5,0,0],
+        [0,0,0,0,0,0,1.5,0],
+        [0,0,0,0,0,0,0,1.5]])
+    # 6D measurement uncertainty matrix
+    R = np.matrix([
+        [100000,0,0,0,0,0],
+        [0,10000,0,0,0,0],
+        [0,0,10,0,0,0],
+        [0,0,0,10,0,0],
+        [0,0,0,0,0.005,0],
+        [0,0,0,0,0,0.005]])
+    ekf = EKF(dt = dt, Q=Q, R=R)
 
     ## Subscribe to Mobility Start/Stop messages
     rospy.Subscriber("/igvc/mobstart", Bool, init_mobi_start, queue_size=1)

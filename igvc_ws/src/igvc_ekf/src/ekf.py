@@ -39,19 +39,25 @@ class EKF:
     # EKF state
     X = None
 
-    def __init__(self, dt:float):
+    def __init__(self, dt:float, Q=None, R=None):
         ## Set timestep size
         self.dt = dt
 
         ## Set uncertainties
-        self.Q = np.multiply(1.5,I_8)
-        self.R = np.matrix([
-            [100000,0,0,0,0,0],
-            [0,10000,0,0,0,0],
-            [0,0,10,0,0,0],
-            [0,0,0,10,0,0],
-            [0,0,0,0,0.005,0],
-            [0,0,0,0,0,0.005]])
+        if Q is not None:
+            self.Q = Q
+        else: #default
+            self.Q = np.multiply(1.5,I_8)
+        if R is not None:
+            self.R = R
+        else: #default from the competition
+            self.R = np.matrix([
+                [100000,0,0,0,0,0],
+                [0,10000,0,0,0,0],
+                [0,0,10,0,0,0],
+                [0,0,0,10,0,0],
+                [0,0,0,0,0.005,0],
+                [0,0,0,0,0,0.005]])
 
         ## Initialize the state
         # we will track 8 things: (x,xdot,y,ydot,phi,phidot,v_l,v_r)
@@ -123,6 +129,11 @@ class EKF:
         self.Z = np.transpose(np.matrix([self.Z_buffer[0],self.Z_buffer[1],self.Z_buffer[2],self.Z_buffer[3],self.Z_buffer[4],self.Z_buffer[5]]))
 
     def update(self):
+        # NOTE We're interested to see if it would be better to update
+        # P directly in predict() rather than holding the P_next buffer.
+        # Uncomment this line to check an equivalent of this setup.
+        #self.P = self.P_next
+
         ## Calculate kalman gain
         # compute innovation covariance: S = H*P*H^T + R
         S = np.matmul(np.matmul(self.H,self.P),self.H_trans) + self.R #6x6 = 6x8 * 8x8 * 8x6 + 6x6
@@ -201,7 +212,6 @@ class EKF:
         state_msg.left_velocity = self.X[6] * WHEEL_RADIUS
         state_msg.right_velocity = self.X[7] * WHEEL_RADIUS
         return state_msg
-
 
 # function to generate the jacobian for our setup and print it.
 def easy_print_jacobian():
