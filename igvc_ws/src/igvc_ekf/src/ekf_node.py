@@ -34,18 +34,14 @@ def meas_gps(gps_msg):
     global ekf, TEMP_counter
     if not mobi_start or TEMP_counter < 5:
         TEMP_counter += 1
-        print("setting start GPS")
         ekf.set_start_gps(gps_msg)
     else:
-        print("setting current GPS")
         ekf.measure_gps(gps_msg)
 def meas_imu(imu_msg):
     global ekf
-    print("setting IMU meas")
     ekf.measure_imu(imu_msg)
 def meas_vel(vel_msg):
     global ekf
-    print("setting velocity meas")
     ekf.measure_velocities(vel_msg)
 def init_mobi_start(mobi_msg):
     global mobi_start

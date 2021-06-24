@@ -7,10 +7,12 @@ from math import sin, cos
 import numpy as np
 np.set_printoptions(precision=4)
 
-# for symbolic jacobian calculaiton
-from sympy import sin, cos, Matrix, Symbol
-from sympy.abc import phi, x, y, t, r, l
-from sympy import pprint
+# for symbolic jacobian calculation
+# NOTE you must install sympy for this part to work, 
+# but it is not necessary except when deriving the initial EKF.
+# from sympy import sin, cos, Matrix, Symbol
+# from sympy.abc import phi, x, y, t, r, l
+# from sympy import pprint
 
 # robot characteristics
 WHEEL_RADIUS = 0.127
@@ -36,9 +38,6 @@ LAT_TO_M = 111086.33 #linear conversion latitude to meters
 LON_TO_M = 81972.46 #linear conversion longitude to meters
 
 class EKF:
-    # EKF state
-    X = None
-
     def __init__(self, dt:float, Q=None, R=None):
         ## Set timestep size
         self.dt = dt
@@ -99,6 +98,9 @@ class EKF:
         self.P_next = self.P
         print("initialized KF")
 
+        ## Create necessary global variables
+        self.start_gps = None
+
     def predict(self):
         ## Update the state transition matrix, F and F_trans
         cos_phi = cos(self.X[4])
@@ -132,15 +134,17 @@ class EKF:
         # NOTE We're interested to see if it would be better to update
         # P directly in predict() rather than holding the P_next buffer.
         # Uncomment this line to check an equivalent of this setup.
-        #self.P = self.P_next
+        self.P = self.P_next
 
         ## Calculate kalman gain
         # compute innovation covariance: S = H*P*H^T + R
         S = np.matmul(np.matmul(self.H,self.P),self.H_trans) + self.R #6x6 = 6x8 * 8x8 * 8x6 + 6x6
         # optimal kalman gain: K = P*H^T*S^-1
         S_inv = np.linalg.pinv(S) #6x6
-        # NOTE not sure why but it blows up unless we multiply by H_T at the end of this
-        self.K = np.multiply(np.matmul(np.matmul(self.P,self.H_trans),S_inv), self.H_trans) #8x6 = 8x8 * 8x6 * 6x6
+        # NOTE not sure why but it blows up unless we multiply by H^T at the end of this
+        #self.K = np.matmul(np.matmul(self.P,self.H_trans),S_inv) #8x6 = 8x8 * 8x6 * 6x6
+        self.K = np.multiply(np.matmul(np.matmul(self.P,self.H_trans),S_inv), self.H_trans)
+        print(self.K)
 
         ## Estimate the current state using the state update equation
         # state update: X(n+1) = X(n) + K*(Z-H*X(n))
@@ -187,8 +191,8 @@ class EKF:
     def measure_velocities(self, vel_msg):
         # read the linear velocities from each wheel's encoder,
         # and convert to angular velocities for our measurement.
-        self.Z_buffer[4] = vel_msg.leftVel / WHEEL_RADIUS
-        self.Z_buffer[5] = vel_msg.rightVel / WHEEL_RADIUS
+        self.Z_buffer[4] = vel_msg.leftVel #/ WHEEL_RADIUS
+        self.Z_buffer[5] = vel_msg.rightVel #/ WHEEL_RADIUS
 
     def calc_equiv_gps(self,x:float,y:float):
         # calculate the equivalent GPS coords for our EKF position
