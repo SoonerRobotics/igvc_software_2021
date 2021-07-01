@@ -1,0 +1,11 @@
+<launch>
+    <!-- Configure the robot -->
+    <include file="$(find igvc_launch)/launch/config/igvc_robot_config.launch" />
+
+    <!-- Serial -->
+    <include file="$(find igvc_serial)/launch/all_serial.launch"/>
+
+    <!-- Mapping -->
+    <include file="$(find igvc_vision)/launch/igvc_lidar.launch"/>
+
+</launch>

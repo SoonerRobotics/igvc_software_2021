@@ -5,6 +5,9 @@
     <!-- EKF -->
     <include file="$(find igvc_ekf)/launch/igvc_ekf.launch" />
 
+    <!-- Vision -->
+    <include file="$(find igvc_vision)/launch/igvc_vision.launch" />
+
     <!-- Run moving target D*lite and the path follower-->
     <include file="$(find igvc_nav)/launch/igvc_path_planner.launch" />
 

@@ -1,0 +1,4 @@
+<launch>
+    <!-- PyQt5 display node -->
+    <node name="igvc_display_node" pkg="igvc_display" type="igvc_display_node.py" output="screen"/>
+</launch>

@@ -1,9 +1,9 @@
 
 from math import sqrt
 
-from node import Node
-from search_space import SearchSpace
-from open_list import OpenList
+from .node import Node
+from .search_space import SearchSpace
+from .open_list import OpenList
 
 
 # Algorithm: http://idm-lab.org/bib/abstracts/papers/aamas10a.pdf
@@ -183,13 +183,13 @@ class mt_dstar_lite:
         """ Get the best path using the parent pointers """
         # Start at the start and keep track of the footsteps
         node = self.goal_node
-        path = [(node.row, node.col)]
+        path = [(node.col, node.row)]
 
         # Go until the goal is found
         while node != self.start_node:
             # Add the next node to the path
             next_node = node.par
-            path.append((next_node.row, next_node.col))
+            path.append((next_node.col, next_node.row))
             node = next_node
 
         # The best path should be found by traversing the pointers

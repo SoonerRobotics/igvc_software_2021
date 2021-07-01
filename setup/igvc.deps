@@ -2,13 +2,12 @@ repositories:
     ../igvc_ws/src/deps/ydlidar_ros:
         type: git
         url: https://github.com/YDLIDAR/ydlidar_ros
-        version: f51e5e37368422d10df303a74952dc31de162549
     ../igvc_ws/src/deps/cv_camera:
         type: git
         url: https://github.com/OTL/cv_camera.git
-    ../igvc_ws/src/deps/yostlabs_imu:
+    ../igvc_ws/src/deps/ros_y3space_driver:
         type: git
-        url: https://github.com/SoonerRobotics/yostlab_imu.git
+        url: https://github.com/MrCerealKiller/ros_y3space_driver.git
         version: master
     ../igvc_ws/src/deps/serial:
         type: git

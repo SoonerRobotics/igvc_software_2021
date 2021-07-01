@@ -2,7 +2,7 @@
 
 """
 
-from node import Node
+from .node import Node
 
 class SearchSpace:
 
@@ -23,7 +23,7 @@ class SearchSpace:
 
     def get_node(self, pos):
         """ Gets a node at a given (row, col) position from the grid """
-        return self.grid[pos[0]][pos[1]]
+        return self.grid[pos[1]][pos[0]]
 
     def get_successors(self, node):
         succ = []
@@ -40,7 +40,6 @@ class SearchSpace:
                 rhs = self.grid[i][j].rhs
                 if rhs < Node.INFINITY:
                     print("(" + str(i) + "," + str(j) + "): " + str(rhs))
-        print "----"
 
     def get_search_space_rhs_map(self):
         rhs_map_data = [0] * self.W * self.H
