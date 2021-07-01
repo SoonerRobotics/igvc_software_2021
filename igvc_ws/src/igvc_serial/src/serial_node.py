@@ -44,6 +44,10 @@ class VelocityCANReadThread(threading.Thread):
     def run(self):
         while not rospy.is_shutdown():
             msg = self.can_obj.recv(timeout=1)
+            
+            if msg is None:
+                print("Received None CAN msg")
+                continue
 
             if msg:
                 if msg.arbitration_id == CAN_ID_RECV_VELOCITY:
@@ -121,7 +125,12 @@ def motors_out(data):
 
     can_msg = can.Message(arbitration_id=CAN_ID_SEND_VELOCITY, data=packed_data)
 
-    cans["motor"].send(can_msg)
+    try:
+        cans["motor"].send(can_msg)
+    except:
+        print("Could not send CAN message")
+    # else:
+    #     print("CAN message sent!")
 
     # print(f"Sent {data.left} {data.right}")
 
