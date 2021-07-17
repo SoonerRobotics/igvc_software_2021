@@ -1,0 +1,56 @@
+\section{Motion Model}
+
+The motion model, $f$, is responsible for predicting the next state given the current state (and the control commands, if applicable).
+
+I use a simpler motion model than Justin's from 2020. Primarily, we do not use GPS coordinates or control parameters for making predictions, and these variables are not included in the state.
+
+\begin{equation}
+    f(\boldsymbol{\hat{x}}_{k-1}, \boldsymbol{u}, \Delta t) = 
+    \begin{pmatrix}
+    x_{k-1} + \dot{x}_{k-1} \cdot \Delta t \\
+    \dot{x}_{k-1} \\
+    y_{k-1} + \dot{y}_{k-1} \cdot \Delta t \\
+    \dot{y}_{k-1} \\
+    \phi_{k-1} + \dot{\phi}_{k-1} \cdot \Delta t \\
+    \dot{\phi}_{k-1} \\
+    v_{l,k-1} \\
+    v_{r,k-1}
+    \end{pmatrix}
+\end{equation}
+
+We need to encode this system of equations into a matrix that can be used directly in the EKF. We cannot use simple matrix multiplication to compute $\cos{\phi}$ and $\sin{\phi}$, so these are re-computed and set at the start of the \textit{Predict} phase on every clock cycle, and treated as if they are constants (cos\_phi and sin\_phi). Important robot characteristics are the constants $R$ = WHEEL\_RADIUS and $L$ = WHEELBASE\_LEN.
+
+\begin{equation}
+    \boldsymbol{F}_{k} =
+    \begin{pmatrix}
+    1 & \Delta t & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & \frac{R}{2} \textrm{cos\_phi} & \frac{R}{2} \textrm{cos\_phi} \\
+    0 & 0 & 1 & \Delta t & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & \frac{R}{2} \textrm{sin\_phi} & \frac{R}{2} \textrm{sin\_phi} \\
+    0 & 0 & 0 & 0 & 1 & \Delta t & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & \frac{R}{L} & -\frac{R}{L} \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+    \end{pmatrix}
+\end{equation}
+
+This matrix gives us the correct behavior of predicting the next state given the current state, as shown in the following equation.
+
+\begin{equation}
+    \boldsymbol{\hat{x}}_{k+1} = \boldsymbol{F}_{k} \cdot \boldsymbol{\hat{x}}_{k}
+\end{equation}
+
+We use SymPy to calculate the Jacobean of the motion model. SymPy is a great python package for performing symbolic operations such as this. We obtain the following Jacobean, which is useful for linearizing the EKF.
+
+\begin{equation}
+    \begin{pmatrix}
+    1 & \Delta t & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & -\frac{R}{2} (v_l + v_r) \sin{\phi} & 0 & \frac{R}{2} \cos{\phi} & \frac{R}{2} \cos{\phi}  \\
+    0 & 0 & 1 & \Delta t & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & \frac{R}{2} (v_l + v_r) \cos{\phi} & 0 & \frac{R}{2} \sin{\phi}  & \frac{R}{2} \sin{\phi}  \\
+    0 & 0 & 0 & 0 & 1 & \Delta t & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & \frac{R}{L} & -\frac{R}{L} \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+    \end{pmatrix}
+\end{equation}

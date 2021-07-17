@@ -1,0 +1,26 @@
+\section{Failure Modes and Resolutions}
+
+\subsection{Software Robustness}
+
+Our robot is able to function even with the failure or removal of any physical sensor or shutdown of any software node. As we have mentioned throughout this document, we use ROS for our software architecture. If something like the main control node is somehow shutdown, the robot will continue to take in data and attempt to act on it, but the commands will not make it to the motors to induce motion. Aside from the control node, any other part of the software can randomly cease and resume functionality without completely stopping the robot. In the worst case, if only the control node is operable, we will still be able to reactively move through the course with no plan of where we are going; luckily the lanes sort of force forward progress, at least for some amount of time. If the robot reaches No Man's Land and we notice it is not pursuing a reasonable path and seems to be moving randomly, we can easily E-stop it.
+
+The E-stop is mainly a hard stop on the basic electronic level. It is also not reversible, and the robot must be completely restarted to move again; this prevents an accidental double press from having adverse affects. Since the E-stop happens without going through the software, it will still work even if the ODROID disconnects or all the deliberative aspects of the robot somehow fail simultaneously.
+
+% An example of our deliberative redundancy is the LiDAR. If the physical LiDAR is unplugged and removed from the robot, as we plan to do in case of heavy rain, or it becomes damaged while the robot is running, everything else will continue working. Because of the pub/sub nature of ROS, this would simply amount to one less source we receive data from; without it, the sensor fusion would be less effective, and we would be relying mainly on the camera for obstacle detection rather than both it and the LiDAR. Neither of these is desired, but they are definitely preferable to a complete fail state when any one component fails.
+
+If our IMU or GPS sensors go out, we can gather position and velocity data from only one rather than both. If both go out, we can still proceed using dead reckoning from encoders on the drive wheels. Each missing piece of our architecture leads to worse results but preserves functionality until everything is broken, in which case we have more significant issues than robustness in the code. 
+
+\subsection{Electronics Interconnectivity}
+
+As mentioned in Section \ref{sec:innovations}, our electronics form an interconnected CAN network with core components at the ends. If anything nonessential breaks or becomes disconnected, even in the middle of a run, we can continue with the competition.
+
+Our ultimate failure point would be in the case of a fault in something directly necessary for the robot's functionality; if the motor controllers break, we will not be able to drive the robot until we replace them. We have backups of such components but would not change them out until we have several minutes with our tools and the robot, likely between runs, in which to identify them as the problem and perform the swap.
+
+\subsection{Mechanical Integrity}
+
+We do not predict any unexpected damage to the robot that would not be immediately fixable. We have designed the robot reasonably well to have multiple points of connection and support between any given set of components. If an electronics mount breaks, we will attempt to repair it and, as a last resort, use zip ties, hot glue, or duct tape. If a panel starts to come off on a given side, we will tighten the bolts and, as a last resort, simply duct tape it to adjacent panels. Any gaps can be reduced and filled with caulk for waterproofing.
+
+We're bringing spare tires and a bike pump, so if our wheels burst or deflate, we're prepared to remedy it. We've designed 3D printed covers for our gearboxes to keep dirt and other gunk out of them and will be printing extras to bring in case of breakage. Many different components are 3D printed, such as the onboard and remote E-Stop holders, the safety light mount, and many electronics mounts. We'll be printing and bringing extras of all these.
+
+We will be bringing extras of all bolts, screws, nuts, washers, and other small components that could come loose and be lost. We'll also be bringing all tools necessary to install, disassemble, and repair the robot and do an inventory of everything before leaving for the competition. We're bringing extras for all the more significant components such as the motors and electronics if we're able. 
+

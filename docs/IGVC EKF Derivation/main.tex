@@ -1,0 +1,27 @@
+\documentclass[a4paper, amsfonts, amssymb, amsmath, reprint, showkeys, nofootinbib, 12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{xcolor}
+
+% define custom function for making matrix names easier to represent
+\newcommand{\mat}[1]{$\boldsymbol{#1}$}
+
+\title{IGVC 2021 EKF Derivation}
+\author{Kevin Robb, \\ based on the work of Justin Kleiber}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/intro}
+
+\input{sections/state}
+\input{sections/motionmodel} %predict
+\input{sections/measurements}
+\input{sections/measurementmodel} %update
+\input{sections/covariance}
+\input{sections/kalmangain}
+\input{sections/conclusion}
+
+\end{document}

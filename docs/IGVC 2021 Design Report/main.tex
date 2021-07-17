@@ -1,0 +1,125 @@
+\documentclass[a4paper, amsfonts, amssymb, amsmath, reprint, showkeys, nofootinbib, 12pt]{article} %twoside
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage[colorinlistoftodos, color=green!40, prependcaption]{todonotes}
+\usepackage{minted} \usepackage{tcolorbox} \tcbuselibrary{minted}
+%\usepackage{enumitem} \setlist{noitemsep}
+\usepackage{listings}
+% setup figure captions
+\usepackage[font={small,it}]{caption}
+% allow hard figure placement
+\usepackage{float}
+
+\usepackage[pdftex, pdftitle={Article}, pdfauthor={Author}]{hyperref} % For hyperlinks in the PDF
+%% Sets page size and margins
+\usepackage[a4paper,top=2cm,bottom=2cm,left=2cm,right=2cm,marginparwidth=2cm]{geometry}
+
+% \begin{code}{python} ... \end{code}: environment for displaying code
+\newtcblisting{code}[2][]{ %linenos can be put in options
+  minted options={mathescape,fontsize=\footnotesize,numbersep=5pt},  
+  minted language=#2,
+  #1,
+  listing only
+}
+
+% make hyperlinks be blue
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=blue,      
+    urlcolor=blue,
+}
+\urlstyle{same}
+
+% set indentation size for whole document
+\setlength\parindent{24pt}
+% use RaggedRight for raggedright with indentation
+\usepackage{ragged2e}
+\setlength{\RaggedRightParindent}{\parindent}
+
+% signature line
+% \usepackage{showframe}
+% \newcommand*{\SignatureAndDate}[1]{%
+%     \par\noindent\makebox[2.5in]{\hrulefill} \hfill\makebox[2.0in]{\hrulefill}%
+%     \par\noindent\makebox[2.5in][l]{#1}      \hfill\makebox[2.0in][l]{Date}%
+% }%
+
+% make references appear in table of contents
+%\usepackage[nottoc,numbib]{tocbibind}
+
+% change figure caption to FIG instead of figure
+\makeatletter
+\renewcommand{\fnum@figure}{FIG. \thefigure}
+\makeatother
+
+\begin{document}
+\title{Sooner Competitive Robotics}
+\author{The University of Oklahoma \\ ``The Aluminum Whale''}
+\date{Submitted May 22nd, 2021}
+
+\maketitle
+%\tableofcontents
+
+\centering
+%{\color{red} DOPE CAD MODEL OF ROBOT}
+\includegraphics[width=0.4\textwidth]{images/frame/frame4.PNG}
+
+\begin{center}
+Team Captain: Kevin Robb \\
+The Team: \\
+\vspace{.2in}
+\begin{tabular}{|c c c|}
+    \hline
+    Kevin Robb & kevin.robb@ou.edu & Undergrad \\
+    Noah Zemlin & noah.zemlin@ou.edu & Grad \\
+    Tyler Julian & tyler.james.julian@ou.edu & Grad \\
+    Jorge Exinia & exinia@ou.edu & Undergrad \\
+    Kichang Song & ksong@ou.edu & Undergrad \\
+    Sarah Brown & srb@ou.edu & Undergrad \\
+    Stephanie Sheldon & scs@ou.edu & Undergrad \\
+    \hline
+    Dr. Chad Davis & weeb@ou.edu & Advisor \\
+    \hline
+\end{tabular}
+\end{center}
+
+{ % use special formatting just for the certification statement
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\noindent
+I certify that the design, development, and work put towards this project by the Sooner Competitive Robotics students is significant and equivalent to a senior design course.
+}
+
+% paragraph formatting style for whole document
+\RaggedRight
+
+% signature line for chaddy daddy
+\vspace{.2in}
+{\Large X}
+\vspace{.05in}
+\hrule
+
+
+\clearpage
+\input{sections/1-intro}
+\clearpage
+\input{sections/2-design-overview}
+\clearpage
+\input{sections/3-mech}
+%\clearpage
+\input{sections/4-electrical}
+%\clearpage
+\input{sections/5-software}
+\clearpage
+\input{sections/6-failure-modes}
+%\clearpage
+\input{sections/7-simulation}
+%\clearpage
+\input{sections/8-performance-testing}
+%\clearpage
+
+\input{bibliography}
+
+\end{document}

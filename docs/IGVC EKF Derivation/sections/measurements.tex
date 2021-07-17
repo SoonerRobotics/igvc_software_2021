@@ -1,0 +1,20 @@
+\section{The Measurements}
+
+After predicting what the state will look like at the next timestep, we need a way to check this prediction against the real world. Since we don't know the true values of our state variables unless we're working exclusively in simulation, we can't simply compare them to some ground truth to evaluate our filter's accuracy. 
+
+An important step in the EKF cycle is the \textit{Update} phase, in which the current values of all sensors are recorded. Sensors tend to have different update frequencies, so in my code I have a ``buffer'' vector that is updated anytime new sensor values are received from a ROS topic, and on the \textit{Update} step, all values in the buffer are loaded into the actual measurement vector, $\boldsymbol{z}$.
+
+\begin{equation}
+    \boldsymbol{z} = 
+    \begin{pmatrix}
+    x & y & \phi & \dot{\phi} & v_l & v_r
+    \end{pmatrix} ^T
+\end{equation}
+
+These first two entries correspond to the $x$ and $y$ position of the robot. We can't directly measure these, but we can include our GPS measurements in order to give the filter more information to work with. We use the fact that in a small, localized area, GPS coordinates can be linearly converted to meters without requiring complex calculations involving the radius of the earth. We use the website \url{http://www.csgnetwork.com/degreelenllavcalc.html} and enter the coordinates of the venue we will be using. For our simulator, we use the OU football stadium; for the IGVC competition, we looked up the GPS coordinates of the host school, Oakland University. It is very simple to update these values once on-site, as we can use our GPS sensor to grab the longitude and latitude around the center of the course, and use the linked website to acquire new conversion factors. These values appear in my EKF code as \textit{LAT\_TO\_M} and \textit{LON\_TO\_M}. 
+
+The next two measured values are the yaw and yaw rate, taken from the IMU. An IMU typically outputs a quaternion, so we use the transformations package to convert this into an euler tuple of yaw, pitch, and roll, which are much more easily human-comprehensible. These are simple to compare to the state, as we're tracking something we can directly measure.
+
+The final two measured values are left and right wheel velocities obtained from encoders on the drive wheels. In our case, the encoders publish linear velocities in m/s, but we convert them to angular velocities using the known wheel radius before saving them as a measurement.
+
+With our measurements obtained, we need a way to compare them to the predictions and update the state. This is where our measurement model comes in.

@@ -1,0 +1,14 @@
+\section{The State}
+
+A Kalman Filter's main goal is to track and estimate a \textit{state}, which is a column vector containing variables we care about.
+
+\begin{equation}
+    \boldsymbol{\hat{x}} = 
+    \begin{pmatrix}
+    x & \dot{x} & y & \dot{y} & \phi & \dot{\phi} & v_l & v_r
+    \end{pmatrix} ^ T
+\end{equation}
+
+We use the EKF primarily for tracking our position, $x$ and $y$, and our global heading $\phi$. To do this well, we also need to track the yaw rate $\dot{\phi}$, component velocities $\dot{x}$ and $\dot{y}$, and wheel velocities $v_l$ and $v_r$. Since we don't care about the actual performance of the EKF when tracking these subsidiary variables, we can assume they're constant in our calculations without hindering the accuracy of the variables we do care about. This assumption of constant velocities makes our motion model very simple, but still quite powerful for the variables with accurate motion models.
+
+The ``hat'' over the state indicates that it is an estimate, since we can't ever say definitively that our state equals the ground truth. As a further notation clarification, when a vector or matrix is subscripted by two values, the first is the timestep for which the variable estimates, and the second is the timestep in which the estimate was made. So a prediction for the next state made at timestep $k$ would be denoted $\boldsymbol{\hat{x}}_{k+1,k}$, while a prediction for the current state made in the previous timestep would be $\boldsymbol{\hat{x}}_{k,k-1}$. When the state is updated, it also applies to the current timestep, so this would be $\boldsymbol{\hat{x}}_{k,k}$. 

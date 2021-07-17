@@ -1,0 +1,8 @@
+\section{Introduction}
+
+The EKF process begins with a one-time initialization: essentially a psuedo-measurement stage in which we give the filter an educated guess of our starting position. This is almost always going to be a full state of zeroes, since the robot is not moving when it turns on, and the starting point is the origin of our coordinate system.
+
+After the initialization, the EKF cycles back and forth between the \textit{Predict} and \textit{Update} stages forever. The prediction phase involves state estimation and covariance extrapolation. The update phase involves calculating the innovation from new measurements, deriving the Kalman Gain, and updating the state and the covariance. After every update, the state is published to a ROS topic where it can be picked up by any other node that can use the localization information.
+
+The following sections detail each of these aspects as they were used for the IGVC 2021 EKF.
+

@@ -1,0 +1,7 @@
+\section{Overall Process and Final Thoughts}
+
+When all the previous logic has been implemented in a class, the actual ROS node is extremely simple. It involves simply initializing the filter, starting a timer, and defining the timer callback to loop through the Predict, Measure, and Update stages. This should make it easy to separately develop the filter from the node that uses the filter. 
+
+In the actual competition, it was not done as neatly as this; I attempted to remedy this afterwards by deleting all dead code and consolidating the things I had written into one python class file and one ROS node file, but could not get it to work with the simulator. The gross but working build is in master, but my cleaner (but not exactly working) build is in the cleanup/ekf branch. 
+
+Feel free to ask me (Kevin) or Justin your EKF-related questions in the Slack or Discord. Even if you're making your own thing rather than using what we've done, we'd still be able to help with your ideas and understanding. Best of luck.

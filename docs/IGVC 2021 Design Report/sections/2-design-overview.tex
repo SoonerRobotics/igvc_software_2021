@@ -1,0 +1,18 @@
+\section{Design and Strategy Overview}
+
+\subsection{Assumptions and Priorities}
+
+Our goal was to create a robot that can reactively avoid obstacles, stay in the lanes, and make reasonable progress through the course. We held off on our more ambitious software goals that would mainly help us in No Man's Land until we were confident that we'd be able to make it there in the first place. Similarly, we didn't worry about the ramp until we were confident we'd be able to make it to the ramp.
+
+We wanted our camera to have an easy view of the relevant part of the course and also have the robot's front wheels in the frame to help with recognizing if we're in the lanes or not. This goal led our design process for the physical robot to the wedge shape we have now, with the camera up high at the rear, looking down the slant.
+
+In our internally generated local map of the course, the robot is represented by only a single point, and to compensate for this, all obstacles are expanded radially by the maximum radius of the robot. This massively simplifies our navigation while still preventing collisions and using a relatively simple algorithm for local path planning. To make this viable, our robot needs to turn as close to in-place as possible, so our main drive wheels are near the center point of the robot.
+
+We also knew that our entire robot would need to be able to hard shut down at the press of the onboard or remote E-stop buttons. We figured the remote is a convenient way to control the robot during testing, so we decided to include a mobility stop as well. The difference here is the E-stop requires the robot to be restarted entirely to operate again, while the mobility stop is reversible for our testing.
+
+\subsection{Innovations} \label{sec:innovations}
+The prime innovations for our electrical team were integrating the CAN bus communication protocol and using custom PCBs with STM32 microcontrollers. The CAN bus is a reliable and safe two-wire communication protocol that is heavily used in the automotive industry. The significant upside to the CAN bus is that no host computer controls everything, so the robot is still functional when a module malfunctions. The only major downside of using the CAN bus is that most development boards do not have CAN transceivers integrated; we chose to create custom PCBs for our modules with built-in CAN transceivers and STM32 microcontrollers, so this was not an issue for us.
+
+The innovative aspects of our software team were the use of a convolutional neural network (CNN), a type of machine learning, to autonomously learn the best algorithm for lane detection. This can outperform anything we could have implemented manually, such as thresholding. Another innovative aspect was the creation of an entirely custom simulator to use for testing the software for this robot, which is detailed much further in Section \ref{sec:sim}. 
+
+We 3D modeled and printed most components on the mechanical side to suit the exact needs of our project, such as the housing for our E-Stop remote to fit our PCB, LCD screen, and its battery.

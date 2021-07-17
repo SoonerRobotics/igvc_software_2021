@@ -1,0 +1,36 @@
+\section{The Kalman Gain}
+
+The Kalman Gain, $\boldsymbol{K}$, is the heart of the kalman filter's \textit{Update} step. It is a matrix that allows uncertainties and covariances to influence the evolution of the state, and it depends on the innovation covariance $\boldsymbol{S}$.
+\begin{equation}
+    \boldsymbol{S} = \boldsymbol{H} \cdot \boldsymbol{P} \cdot \boldsymbol{H}^T + \boldsymbol{R}
+\end{equation}
+
+The inverse of this innovation covariance is directly used to compute the Kalman Gain.
+
+\begin{equation}
+    \boldsymbol{K} = \boldsymbol{P} \cdot \boldsymbol{H}^T \cdot \boldsymbol{S}^{-1}
+\end{equation}
+
+\begin{quote}
+    Note: This equation should work, but we noticed the EKF was blowing up to infinity because of weird divergences in the off-diagonal elements of the Kalman Gain. As such, we made a last-minute hack by multiplying this $\boldsymbol{K}$ component-wise by $\boldsymbol{H}^T$. This has the effect of forcing all off-diagonals to zero, which is definitely bad but fixed the problems in our time of need. Please do something better than this in the future.
+\end{quote}
+
+Now that we have $\boldsymbol{K}$, we can update the state and the covariance, using our innovation and the predictions for $\boldsymbol{x}$ and $\boldsymbol{P}$ made in the previous timestep.
+
+\begin{equation}
+    \boldsymbol{\hat{x}}_{k,k} = \boldsymbol{\hat{x}}_{k,k-1} + \boldsymbol{K} \cdot \boldsymbol{y}_k
+\end{equation}
+
+\begin{equation}
+    \boldsymbol{P}_{k,k} = (\boldsymbol{I}_8 - \boldsymbol{K} \cdot \boldsymbol{H}) \cdot \boldsymbol{P}_{k,k-1}
+    \label{eq:cov_update}
+\end{equation}
+where $\boldsymbol{I}_8$ is the 8x8 identity matrix.
+    
+Note: Equation (\ref{eq:cov_update}) is a simplified version of the equation which mostly works, but is unstable, and will multiply significant errors which could ruin the whole filter. It works mostly fine, but for reference the more correct equation is included below.
+\begin{equation}
+    \boldsymbol{P}_{k,k} = (\boldsymbol{I}_8 - \boldsymbol{K} \cdot \boldsymbol{H}) \cdot \boldsymbol{P}_{k,k-1}
+    \cdot (\boldsymbol{I}_8 - \boldsymbol{K} \cdot \boldsymbol{H})^T + 
+    \boldsymbol{K} \cdot \boldsymbol{R} \cdot \boldsymbol{K}^T
+\end{equation}
+

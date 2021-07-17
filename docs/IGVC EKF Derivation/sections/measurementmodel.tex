@@ -1,0 +1,26 @@
+\section{Measurement Model}
+
+The measurement model serves the goal of allowing us to retrieve the equivalent measurement values for a given state. This is necessary for calculating the Innovation, and thus the Kalman Gain, which allows us to update the state in the best way possible by taking both the predictions and the measurements into account. This use implies the necessity of being able to retrieve the measurements from the state, which is why we include the wheel velocities $v_l$ and $v_r$ in the state despite not actually using these values for navigation; without including them directly, it is hard to recover them from the remaining state variables.
+
+The desired behavior is
+\begin{equation}
+    \boldsymbol{z}_{\textrm{equiv}} = \boldsymbol{H} \cdot \boldsymbol{\hat{x}}_{n,n-1}
+\end{equation}
+
+In words, we multiply $\boldsymbol{H}$ by the prediction for the current state made in the previous timestep to recover an equivalent measurement. Since our measurement vector is simply a subset of the state, our measurement model is
+\begin{equation}
+    \boldsymbol{H} = 
+    \begin{pmatrix}
+    1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+    \end{pmatrix}
+\end{equation}
+
+We can then calculate our innovation,
+\begin{equation}
+    \boldsymbol{y}_{n} = \boldsymbol{z}_{n} - \boldsymbol{z}_{\textrm{equiv}}
+\end{equation}
