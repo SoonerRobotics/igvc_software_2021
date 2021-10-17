@@ -9,6 +9,8 @@ DigitalOut led1(PC_13);
 
 CAN can1(PA_11, PA_12, 100000); // init can
 
+DigitalIn estop_enable(PB_9);
+
 InterruptIn encoderLeftA(PA_8); //init left encoder a pin
 InterruptIn encoderLeftB(PA_9); // init left encoder b pin
 
@@ -99,6 +101,24 @@ int main()
         
         speed[0] = (char) left_speed;
         speed[1] = (char) right_speed;
+
+        if(estop_enable == 0){
+            is_stopped = true;
+            motorLeft = 0.0f;
+            motorRight = 0.0f;
+            motorLeft.tuneP(0.0f);
+            motorLeft.tuneI(0.0f);
+            motorLeft.tuneD(0.0f);
+            motorRight.tuneP(0.0f);
+            motorRight.tuneI(0.0f);
+            motorRight.tuneD(0.0f);
+            ticker.detach();
+            motorLeft.brake();
+            motorRight.brake();  
+
+            while(true); //creates infinite loop that requires a reset to fix. 
+            return -1;
+        }
 
         // Reads the next message in queue in the can mailbox. 
         if(can1.read(msg)){
