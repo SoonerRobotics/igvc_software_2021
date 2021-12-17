@@ -1,0 +1,6 @@
+<launch>
+    <!-- start rosbridge -->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+    <!-- EKF node -->
+   <node name="ekf_node" pkg="igvc_ekf" type="ekf_node.py" output="screen"/>
+</launch>
